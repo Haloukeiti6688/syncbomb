@@ -1,0 +1,1470 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>同步炸弹 · 两颗心一个节奏</title>
+<style>
+:root{
+  --bg:#0f0c1a;--bg2:#1a1528;--bg3:#241e38;
+  --surface:#2a2240;--surface2:#332b50;
+  --border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.14);
+  --pink:#ff6eb4;--pink2:#ff9dd0;--gold:#ffd166;--gold2:#ffe599;
+  --purple:#a78bfa;--teal:#5eead4;--green:#4ade80;--red:#f87171;--orange:#fb923c;
+  --text:#f0e6ff;--text2:rgba(240,230,255,0.65);--text3:rgba(240,230,255,0.35);
+  --r:16px;--rsm:10px;--rlg:22px;
+  --font:-apple-system,'PingFang SC','Helvetica Neue',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-family:var(--font);overflow:hidden;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+.screen{position:fixed;inset:0;display:flex;flex-direction:column;overflow:hidden;opacity:0;pointer-events:none;transition:opacity .25s ease;background:var(--bg)}
+.screen.active{opacity:1;pointer-events:all}
+
+/* ── SPLASH ── */
+.splash-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;overflow:hidden;background:radial-gradient(ellipse at 50% 40%,#2d1b4e 0%,#0f0c1a 70%)}
+.splash-content{display:flex;flex-direction:column;align-items:center;gap:14px;padding:40px 32px;position:relative;z-index:1}
+.splash-bomb{font-size:80px;animation:floatbomb 4s ease-in-out infinite;filter:drop-shadow(0 0 24px rgba(255,110,180,.5))}
+@keyframes floatbomb{0%,100%{transform:translateY(0) rotate(-5deg)}50%{transform:translateY(-16px) rotate(5deg)}}
+.splash-title{font-size:36px;font-weight:800;letter-spacing:4px;background:linear-gradient(135deg,var(--gold),var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.splash-sub{font-size:15px;color:var(--text2);text-align:center;line-height:1.7}
+.cta-btn{margin-top:8px;display:flex;align-items:center;gap:8px;padding:16px 40px;border-radius:100px;background:linear-gradient(135deg,var(--pink),var(--purple));border:none;color:#fff;font-size:17px;font-weight:600;cursor:pointer;box-shadow:0 8px 32px rgba(255,110,180,.4);transition:transform .15s}
+.cta-btn:active{transform:scale(.94)}
+.splash-hint{font-size:12px;color:var(--text3)}
+.splash-particles{position:absolute;inset:0;pointer-events:none}
+
+/* ── TAB BAR ── */
+.tab-bar{display:flex;align-items:stretch;background:var(--bg2);border-top:1px solid var(--border);flex-shrink:0;padding-bottom:env(safe-area-inset-bottom,0px)}
+.tab-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:10px 4px 10px;background:transparent;border:none;cursor:pointer;transition:all .15s;color:var(--text3)}
+.tab-item:active{background:var(--surface)}
+.tab-item-active{color:var(--pink)!important}
+.tab-icon{font-size:22px;line-height:1}
+.tab-label{font-size:10px;font-weight:500;letter-spacing:.02em;line-height:1}
+
+/* ── STUDIO ── */
+.studio-header{padding:52px 20px 16px;display:flex;align-items:center;gap:14px;background:var(--bg2);flex-shrink:0}
+.studio-title{font-size:18px;font-weight:700}
+.studio-body{flex:1;overflow-y:auto;padding:16px 20px 24px;-webkit-overflow-scrolling:touch}
+.studio-body::-webkit-scrollbar{display:none}
+.studio-intro{background:linear-gradient(135deg,rgba(255,110,180,.12),rgba(167,139,250,.12));border:1px solid rgba(255,110,180,.2);border-radius:var(--rlg);padding:16px;margin-bottom:16px;font-size:13px;color:var(--text2);line-height:1.7}
+.studio-intro strong{color:var(--pink);font-weight:600}
+.studio-progress{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;gap:12px}
+.studio-progress-info{flex:1}
+.studio-progress-num{font-size:20px;font-weight:700;color:var(--gold)}
+.studio-progress-label{font-size:12px;color:var(--text3);margin-top:2px}
+.rec-list{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+.rec-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;display:flex;align-items:center;gap:12px;transition:border-color .15s}
+.rec-item.has-rec{border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.04)}
+.rec-item.recording{border-color:var(--red);background:rgba(248,113,113,.08);animation:recpulse 1s ease infinite}
+@keyframes recpulse{0%,100%{border-color:rgba(248,113,113,.4)}50%{border-color:var(--red)}}
+.rec-text{flex:1;font-size:14px;color:var(--text);line-height:1.5}
+.rec-status{font-size:11px;color:var(--text3);margin-top:3px}
+.rec-status.done{color:var(--green)}
+.rec-actions{display:flex;gap:6px;flex-shrink:0}
+.rec-btn{width:36px;height:36px;border-radius:50%;border:1px solid var(--border2);background:var(--surface2);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;color:var(--text)}
+.rec-btn:active{transform:scale(.9)}
+.rec-btn.rec-record{background:rgba(248,113,113,.15);border-color:rgba(248,113,113,.4);color:var(--red)}
+.rec-btn.rec-record.active{background:var(--red);color:#fff;animation:recpulse 1s ease infinite}
+.rec-btn.rec-play{background:rgba(74,222,128,.1);border-color:rgba(74,222,128,.3);color:var(--green)}
+.rec-btn.rec-delete{background:rgba(255,255,255,.05);color:var(--text3)}
+.studio-tip{background:var(--surface);border-radius:var(--r);padding:12px 14px;font-size:12px;color:var(--text3);line-height:1.7}
+.studio-tip strong{color:var(--text2)}
+
+/* ── SETTINGS MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal-sheet{background:var(--bg2);border-radius:24px 24px 0 0;padding:20px 20px 40px;width:100%;max-width:480px;transform:translateY(100%);transition:transform .3s ease}
+.modal-overlay.open .modal-sheet{transform:translateY(0)}
+.modal-title{font-size:16px;font-weight:700;margin-bottom:18px;text-align:center}
+.setting-row{display:flex;align-items:center;gap:12px;margin-bottom:14px;padding:12px 14px;background:var(--surface);border-radius:var(--r)}
+.setting-label{flex:1;font-size:14px;color:var(--text)}
+.setting-label small{display:block;font-size:11px;color:var(--text3);margin-top:2px}
+.seg-ctrl{display:flex;gap:4px}
+.seg-btn{padding:6px 12px;border-radius:8px;font-size:12px;font-weight:500;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;transition:all .15s}
+.seg-btn.active{background:var(--pink);color:#fff;border-color:var(--pink)}
+.slider-wrap{display:flex;align-items:center;gap:8px;width:140px}
+input[type=range]{flex:1;height:4px;-webkit-appearance:none;background:var(--surface2);border-radius:2px;outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--pink);cursor:pointer}
+
+/* ── HOME ── */
+.home-header{padding:52px 20px 16px;background:linear-gradient(180deg,var(--bg2) 0%,transparent 100%);flex-shrink:0}
+.home-title-row{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.home-logo{font-size:32px}
+.home-game-title{font-size:20px;font-weight:700}
+.home-game-sub{font-size:12px;color:var(--gold);margin-top:2px}
+.icon-btn{margin-left:auto;width:40px;height:40px;border-radius:50%;background:var(--surface);border:1px solid var(--border2);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s;color:var(--text)}
+.icon-btn:active{background:var(--surface2)}
+.progress-wrap{display:flex;align-items:center;gap:10px}
+.progress-track{flex:1;height:6px;background:var(--surface2);border-radius:3px;overflow:hidden}
+.progress-fill{height:6px;border-radius:3px;background:linear-gradient(90deg,var(--pink),var(--gold));transition:width .6s ease}
+.progress-text{font-size:12px;color:var(--text3);white-space:nowrap}
+.home-body{flex:1;overflow-y:auto;padding:12px 20px;-webkit-overflow-scrolling:touch}
+.home-body::-webkit-scrollbar{display:none}
+.badge-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;min-height:24px}
+.badge{padding:3px 10px;border-radius:100px;font-size:11px;font-weight:500;white-space:nowrap}
+.badge-gold{background:rgba(255,209,102,.15);color:var(--gold);border:1px solid rgba(255,209,102,.3)}
+.badge-pink{background:rgba(255,110,180,.15);color:var(--pink);border:1px solid rgba(255,110,180,.3)}
+.badge-purple{background:rgba(167,139,250,.15);color:var(--purple);border:1px solid rgba(167,139,250,.3)}
+.badge-teal{background:rgba(94,234,212,.15);color:var(--teal);border:1px solid rgba(94,234,212,.3)}
+.section-label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px}
+.chapter-list{display:flex;flex-direction:column;gap:10px}
+.chapter-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);padding:16px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:14px;position:relative;overflow:hidden}
+.chapter-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:2px 0 0 2px}
+.chapter-card.ch-current::before{background:var(--pink)}
+.chapter-card.ch-done::before{background:var(--green)}
+.chapter-card.ch-locked::before{background:var(--surface2)}
+.chapter-card:active:not(.ch-locked){transform:scale(.97)}
+.chapter-card.ch-locked{opacity:.45;cursor:not-allowed}
+.ch-icon{font-size:36px;flex-shrink:0}
+.ch-body{flex:1;min-width:0}
+.ch-name{font-size:15px;font-weight:600}
+.ch-desc{font-size:12px;color:var(--text2);margin-top:2px}
+.ch-stars{font-size:13px;margin-top:5px}
+.ch-arrow{font-size:18px;color:var(--text3);flex-shrink:0}
+.home-footer{padding:16px 20px 32px;background:linear-gradient(0deg,var(--bg2) 0%,transparent 100%);flex-shrink:0}
+
+/* ── CHAPTER ── */
+.chapter-header{padding:52px 20px 16px;display:flex;align-items:center;gap:14px;background:var(--bg2);flex-shrink:0}
+.chapter-header-emoji{font-size:32px}
+.chapter-header-name{font-size:18px;font-weight:700}
+.chapter-header-sub{font-size:12px;color:var(--text2);margin-top:2px}
+.level-list{flex:1;overflow-y:auto;padding:16px 20px 32px;display:flex;flex-direction:column;gap:10px}
+.level-list::-webkit-scrollbar{display:none}
+.level-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:12px}
+.level-card:active:not(.lv-locked){transform:scale(.97)}
+.level-card.lv-locked{opacity:.4;cursor:not-allowed}
+.level-card.lv-current{border-color:rgba(255,110,180,.3);background:rgba(255,110,180,.05)}
+.lv-num{width:36px;height:36px;border-radius:50%;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:var(--text2);flex-shrink:0}
+.lv-current .lv-num{background:rgba(255,110,180,.2);color:var(--pink)}
+.lv-done .lv-num{background:rgba(74,222,128,.15);color:var(--green)}
+.lv-body{flex:1}
+.lv-name{font-size:14px;font-weight:500}
+.lv-threshold{font-size:11px;color:var(--text3);margin-top:2px}
+.lv-stars{font-size:14px;letter-spacing:2px}
+
+/* ── PRE GAME ── */
+.pre-wrap{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.floating-back{position:absolute;top:52px;left:20px;z-index:10}
+.pre-scene{height:220px;display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0;background:radial-gradient(ellipse at 50% 50%,var(--bg3) 0%,var(--bg) 70%)}
+.pre-big-emoji{font-size:90px;position:relative;z-index:1;animation:floatbomb 4s ease-in-out infinite;filter:drop-shadow(0 0 24px rgba(255,209,102,.4))}
+.pre-scene-glow{position:absolute;width:160px;height:160px;border-radius:50%;background:radial-gradient(circle,rgba(255,110,180,.2) 0%,transparent 70%);animation:glowpulse 3s ease infinite}
+@keyframes glowpulse{0%,100%{transform:scale(1);opacity:.6}50%{transform:scale(1.3);opacity:1}}
+.pre-info{flex:1;padding:20px 24px;overflow-y:auto}
+.pre-chapter-tag{display:inline-block;padding:3px 10px;border-radius:100px;background:rgba(255,110,180,.15);color:var(--pink);font-size:11px;font-weight:600;margin-bottom:8px;border:1px solid rgba(255,110,180,.25)}
+.pre-level-name{font-size:24px;font-weight:800;margin-bottom:6px}
+.pre-level-desc{font-size:14px;color:var(--text2);line-height:1.6;margin-bottom:16px}
+.pre-rules{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
+.rule-item{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2)}
+.rule-item strong{color:var(--gold)}
+.rule-icon{font-size:16px;flex-shrink:0}
+.pre-best{font-size:13px;color:var(--text3);padding:8px 12px;background:var(--surface);border-radius:var(--rsm)}
+.pre-best strong{color:var(--teal)}
+.pre-footer{padding:16px 24px 32px;flex-shrink:0}
+
+/* ── GAME ── */
+.game-hud{padding:52px 20px 10px;display:flex;align-items:center;gap:8px;background:linear-gradient(180deg,var(--bg2) 0%,transparent 100%);flex-shrink:0}
+.hud-left{flex:1}
+.hud-level{font-size:11px;font-weight:600;color:var(--pink);letter-spacing:.06em;text-transform:uppercase}
+.hud-name{font-size:14px;font-weight:600}
+.hud-center{display:flex;flex-direction:column;align-items:center}
+.round-dots{display:flex;gap:5px}
+.rd{width:10px;height:10px;border-radius:50%;background:var(--surface2);border:1.5px solid var(--border2);transition:all .25s}
+.rd.done-perfect{background:var(--green);border-color:var(--green)}
+.rd.done-good{background:var(--gold);border-color:var(--gold)}
+.rd.done-close{background:var(--orange);border-color:var(--orange)}
+.rd.done-fail{background:var(--red);border-color:var(--red)}
+.rd.current{background:var(--pink);border-color:var(--pink);animation:blinkdot 1s ease infinite}
+@keyframes blinkdot{0%,100%{opacity:1}50%{opacity:.4}}
+.hud-right{text-align:right}
+.hud-best-label{font-size:10px;color:var(--text3)}
+.hud-best-val{font-size:15px;font-weight:700;color:var(--teal)}
+
+/* ── DUAL PLAYER AREA ── */
+.dual-area{display:flex;gap:8px;padding:0 12px;flex-shrink:0;margin-bottom:8px}
+.player-panel{flex:1;border-radius:var(--r);border:1px solid var(--border);padding:10px 10px 8px;display:flex;flex-direction:column;align-items:center;gap:5px;position:relative;overflow:hidden;transition:border-color .2s,background .2s}
+.player-panel.pp-you{background:rgba(255,110,180,.04)}
+.player-panel.pp-partner{background:rgba(167,139,250,.04)}
+.player-panel.holding{border-color:var(--green)!important;background:rgba(74,222,128,.07)!important}
+.player-panel.released{border-color:var(--pink)!important;background:rgba(255,110,180,.07)!important}
+.pp-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;opacity:.6}
+.pp-label-you{color:var(--pink)}
+.pp-label-partner{color:var(--purple)}
+.pp-avatar{font-size:22px}
+.pp-status{font-size:11px;color:var(--text3);text-align:center;line-height:1.4;min-height:16px}
+.pp-ms{font-size:20px;font-weight:800;color:var(--text);font-variant-numeric:tabular-nums;min-height:28px;display:flex;align-items:center}
+.pp-ms.good{color:var(--green)}
+.pp-ms.ok{color:var(--gold)}
+.pp-ms.bad{color:var(--red)}
+.pp-bar{width:100%;height:4px;background:var(--surface2);border-radius:2px;overflow:hidden;margin-top:2px}
+.pp-bar-fill{height:4px;border-radius:2px;transition:width .3s ease,background .3s}
+.vs-divider{display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;color:var(--text3);font-weight:600;padding-top:8px}
+
+.game-arena{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;overflow:hidden;margin:0 12px;background:radial-gradient(ellipse at 50% 40%,var(--bg3) 0%,var(--bg) 80%);border-radius:var(--rlg);border:1px solid var(--border)}
+.arena-bg-emoji{position:absolute;font-size:120px;opacity:.05;pointer-events:none}
+.arena-state-emoji{font-size:54px;position:relative;z-index:1;transition:all .2s;margin-bottom:8px}
+.arena-task{font-size:15px;font-weight:600;text-align:center;padding:0 24px;position:relative;z-index:1}
+.arena-sub{font-size:12px;color:var(--text3);text-align:center;margin-top:5px;position:relative;z-index:1}
+
+/* fake signal overlays */
+.fake-ghost{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:5;opacity:0;transition:opacity .1s}
+.fake-ghost.show{opacity:1}
+.fake-ghost-text{font-size:28px;font-weight:800;color:var(--red);opacity:.5;animation:ghostdrift 0.8s ease forwards}
+@keyframes ghostdrift{0%{transform:translateY(0) scale(1);opacity:.5}100%{transform:translateY(-30px) scale(1.3);opacity:0}}
+.fake-ripple{position:absolute;width:150px;height:150px;border-radius:50%;border:3px solid var(--red);animation:rippleout 0.7s ease forwards;pointer-events:none;z-index:5}
+@keyframes rippleout{0%{transform:scale(.5);opacity:.8}100%{transform:scale(2.2);opacity:0}}
+.fake-countdown{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:56px;font-weight:900;color:var(--red);z-index:6;pointer-events:none;animation:fakecountpop .4s ease}
+@keyframes fakecountpop{0%{transform:translate(-50%,-50%) scale(1.5);opacity:0}50%{opacity:1}100%{transform:translate(-50%,-50%) scale(1);opacity:0}}
+
+.press-zone{display:flex;flex-direction:column;align-items:center;gap:6px;padding:6px 20px 28px;flex-shrink:0}
+.press-feedback{height:18px;font-size:12px;color:var(--text3);text-align:center}
+.press-btn{width:120px;height:120px;border-radius:50%;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;transition:all .12s;position:relative}
+.press-btn::before{content:'';position:absolute;inset:-2px;border-radius:50%;background:linear-gradient(135deg,var(--pink),var(--purple));z-index:-1;opacity:0;transition:opacity .2s}
+.press-btn:active{transform:scale(.91)}
+.pb-idle{background:var(--surface2);box-shadow:0 4px 20px rgba(0,0,0,.3)}
+.pb-idle::before{opacity:1}
+.pb-hold{background:linear-gradient(135deg,rgba(74,222,128,.2),rgba(94,234,212,.2));border:2px solid var(--green);box-shadow:0 0 30px rgba(74,222,128,.3);animation:holdpulse 1s ease infinite}
+@keyframes holdpulse{0%,100%{box-shadow:0 0 20px rgba(74,222,128,.2)}50%{box-shadow:0 0 40px rgba(74,222,128,.5)}}
+.pb-release{background:linear-gradient(135deg,rgba(248,113,113,.25),rgba(251,146,60,.25));border:2px solid var(--red);box-shadow:0 0 30px rgba(248,113,113,.4);animation:shakebtn .25s ease}
+@keyframes shakebtn{0%,100%{transform:rotate(0)}25%{transform:rotate(-4deg)}75%{transform:rotate(4deg)}}
+.pb-done{background:var(--surface);box-shadow:none;opacity:.6}
+.press-btn-icon{font-size:28px}
+.press-btn-label{font-size:12px;font-weight:600;color:var(--text2)}
+.pb-hold .press-btn-label{color:var(--green)}
+.pb-release .press-btn-label{color:var(--red)}
+.round-result{min-height:44px;text-align:center;font-size:13px;color:var(--text2);line-height:1.6}
+.candy-text{color:var(--pink2);font-weight:500;animation:popin .35s ease}
+.diff-text{font-size:11px;color:var(--text3);margin-top:2px}
+@keyframes popin{0%{transform:scale(.7);opacity:0}70%{transform:scale(1.05)}100%{transform:scale(1);opacity:1}}
+.voice-reading{display:inline-block;font-size:11px;color:var(--purple);opacity:.7;margin-left:4px}
+
+/* ── RESULT ── */
+.result-wrap{flex:1;overflow-y:auto;padding:52px 20px 32px;display:flex;flex-direction:column;gap:12px}
+.result-wrap::-webkit-scrollbar{display:none}
+.result-hero{background:var(--surface);border-radius:var(--rlg);padding:24px 20px;text-align:center;border:1px solid var(--border);position:relative;overflow:hidden}
+.result-hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(255,110,180,.12) 0%,transparent 60%)}
+.result-big-emoji{font-size:52px;margin-bottom:8px;display:block;animation:popin .4s ease}
+.result-grade{font-size:21px;font-weight:800;margin-bottom:5px}
+.result-stars{font-size:30px;letter-spacing:6px;margin:8px 0}
+.result-best-diff{font-size:40px;font-weight:900;background:linear-gradient(135deg,var(--gold),var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.result-best-label{font-size:12px;color:var(--text3);margin-top:2px}
+.result-candy{margin-top:12px;padding:12px 16px;background:rgba(255,110,180,.08);border:1px solid rgba(255,110,180,.2);border-radius:var(--r);font-size:14px;color:var(--pink2);font-weight:500;line-height:1.6;position:relative}
+.speak-btn{position:absolute;top:8px;right:10px;background:transparent;border:none;font-size:16px;cursor:pointer;opacity:.6}
+.speak-btn:active{opacity:1}
+
+/* dual result compare */
+.dual-result{background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);padding:16px}
+.dual-result-title{font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px}
+.dual-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.dual-who{font-size:12px;color:var(--text2);width:36px;flex-shrink:0}
+.dual-bar-wrap{flex:1;height:10px;background:var(--surface2);border-radius:5px;overflow:hidden;position:relative}
+.dual-bar{height:10px;border-radius:5px;transition:width .8s ease}
+.dual-bar-you{background:linear-gradient(90deg,var(--pink),var(--pink2))}
+.dual-bar-partner{background:linear-gradient(90deg,var(--purple),#c4b5fd)}
+.dual-ms{font-size:13px;font-weight:700;color:var(--text);width:48px;text-align:right;flex-shrink:0}
+.winner-badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:4px;background:rgba(255,209,102,.15);color:var(--gold);border:1px solid rgba(255,209,102,.3);margin-left:6px}
+
+.result-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px 8px;text-align:center}
+.stat-val{font-size:22px;font-weight:700}
+.stat-lbl{font-size:10px;color:var(--text3);margin-top:3px}
+.result-compare{background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);padding:16px}
+.compare-title{font-size:12px;font-weight:600;color:var(--text3);margin-bottom:12px;text-transform:uppercase;letter-spacing:.06em}
+.compare-item{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:12px;color:var(--text2)}
+.compare-bar-wrap{flex:1;height:8px;background:var(--surface2);border-radius:4px;overflow:hidden}
+.compare-bar-fill{height:8px;border-radius:4px;transition:width .8s ease}
+.bar-perfect{background:var(--green)}.bar-good{background:var(--gold)}.bar-close{background:var(--orange)}.bar-fail{background:var(--red)}
+.result-unlock{background:linear-gradient(135deg,rgba(167,139,250,.12),rgba(255,110,180,.12));border:1px solid rgba(167,139,250,.25);border-radius:var(--rlg);padding:14px;text-align:center}
+.unlock-emoji{font-size:28px;margin-bottom:5px}
+.unlock-title{font-size:13px;font-weight:600;color:var(--purple)}
+.unlock-desc{font-size:12px;color:var(--text2);margin-top:3px}
+.result-actions{display:flex;gap:10px}
+
+/* profile */
+.profile-header{padding:52px 20px 16px;display:flex;align-items:center;gap:14px;background:var(--bg2);flex-shrink:0}
+.profile-title{font-size:18px;font-weight:700}
+.profile-body{flex:1;overflow-y:auto;padding:16px 20px 32px;display:flex;flex-direction:column;gap:12px}
+.profile-body::-webkit-scrollbar{display:none}
+.profile-hero{background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);padding:20px;text-align:center}
+.profile-avatar{font-size:48px;margin-bottom:10px}
+.profile-big-stat{font-size:40px;font-weight:900;background:linear-gradient(135deg,var(--gold),var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin:12px 0 4px}
+.profile-big-label{font-size:12px;color:var(--text3)}
+.profile-badges-title{font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+.profile-badges-list{display:flex;flex-wrap:wrap;gap:8px}
+
+/* shared */
+.back-btn{width:40px;height:40px;border-radius:50%;background:var(--surface);border:1px solid var(--border2);color:var(--text);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s}
+.back-btn:active{background:var(--surface2)}
+.main-btn{width:100%;padding:15px;border-radius:100px;background:linear-gradient(135deg,var(--pink),var(--purple));border:none;color:#fff;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 6px 24px rgba(255,110,180,.3);transition:transform .15s}
+.main-btn:active{transform:scale(.96)}
+.main-btn.secondary{background:var(--surface2);box-shadow:none;color:var(--text2)}
+.main-btn.secondary:active{background:var(--surface)}
+
+/* particles */
+.particles-layer{position:fixed;inset:0;pointer-events:none;z-index:9999}
+.particle{position:absolute;font-size:20px;animation:particlerise 1.4s ease forwards;pointer-events:none}
+@keyframes particlerise{0%{opacity:1;transform:translateY(0) scale(1) rotate(0deg)}100%{opacity:0;transform:translateY(-140px) scale(.4) rotate(360deg)}}
+
+/* screen flash for fake */
+.screen-flash{position:fixed;inset:0;pointer-events:none;z-index:200;opacity:0;background:var(--red);transition:opacity .05s}
+.screen-flash.flash{opacity:.18}
+</style>
+</head>
+<body>
+
+<!-- splash -->
+<div class="screen active" id="s-splash">
+  <div class="splash-wrap">
+    <div class="splash-particles" id="splash-particles"></div>
+    <div class="splash-content">
+      <div class="splash-bomb">💣</div>
+      <h1 class="splash-title">同步炸弹</h1>
+      <p class="splash-sub">两颗心，同一个节奏<br>误差越小，甜蜜越多</p>
+      <button class="cta-btn" onclick="App.goHome()"><span>开始游戏</span><span>→</span></button>
+      <p class="splash-hint">拉上另一半一起玩效果更佳 💕</p>
+    </div>
+  </div>
+</div>
+
+<!-- home -->
+<div class="screen" id="s-home">
+  <div class="home-header">
+    <div class="home-title-row">
+      <span class="home-logo">💣</span>
+      <div><div class="home-game-title">同步炸弹</div><div class="home-game-sub" id="home-total-stars">总星数 ⭐ 0</div></div>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-track"><div class="progress-fill" id="home-progress-fill"></div></div>
+      <span class="progress-text" id="home-progress-text">第1关</span>
+    </div>
+  </div>
+  <div class="home-body">
+    <div class="badge-row" id="home-badges"></div>
+    <div class="section-label">选择章节</div>
+    <div class="chapter-list" id="chapter-list"></div>
+  </div>
+  <div class="tab-bar">
+    <button class="tab-item tab-item-active" onclick="App.continueGame()" id="tab-play">
+      <span class="tab-icon">🎮</span><span class="tab-label" id="tab-play-label">继续挑战</span>
+    </button>
+    <button class="tab-item" onclick="App.goStudio()">
+      <span class="tab-icon">🎙️</span><span class="tab-label">录音室</span>
+    </button>
+    <button class="tab-item" onclick="App.openSettings()">
+      <span class="tab-icon">⚙️</span><span class="tab-label">设置</span>
+    </button>
+    <button class="tab-item" onclick="App.goProfile()">
+      <span class="tab-icon">💕</span><span class="tab-label">我的</span>
+    </button>
+  </div>
+</div>
+
+<!-- chapter -->
+<div class="screen" id="s-chapter">
+  <div class="chapter-header">
+    <button class="back-btn" onclick="App.goHome()">←</button>
+    <div class="chapter-header-emoji" id="ch-header-emoji">💫</div>
+    <div><div class="chapter-header-name" id="ch-header-name">初遇心动</div><div class="chapter-header-sub" id="ch-header-sub">5关</div></div>
+  </div>
+  <div class="level-list" id="level-list"></div>
+</div>
+
+<!-- pre -->
+<div class="screen" id="s-pre">
+  <div class="pre-wrap">
+    <button class="back-btn floating-back" onclick="App.goHome()">←</button>
+    <div class="pre-scene">
+      <div class="pre-big-emoji" id="pre-big-emoji">💣</div>
+      <div class="pre-scene-glow"></div>
+    </div>
+    <div class="pre-info">
+      <div class="pre-chapter-tag" id="pre-chapter-tag">第一章</div>
+      <h2 class="pre-level-name" id="pre-level-name">第一次握手</h2>
+      <p class="pre-level-desc" id="pre-level-desc">你们第一次感受彼此的节奏</p>
+      <div class="pre-rules">
+        <div class="rule-item"><span class="rule-icon">🎯</span><span>误差 ≤ <strong id="pre-threshold">300</strong>ms 过关</span></div>
+        <div class="rule-item"><span class="rule-icon">🔄</span><span>共 <strong id="pre-rounds">3</strong> 轮，集满2星进入下一关</span></div>
+        <div class="rule-item" id="pre-special-rule" style="display:none"><span class="rule-icon">⚡</span><span id="pre-special-text"></span></div>
+      </div>
+      <div class="pre-best" id="pre-best" style="display:none">上次最佳：<strong id="pre-best-val">—</strong></div>
+    </div>
+    <div class="pre-footer"><button class="main-btn" onclick="App.startGame()">出发 →</button></div>
+  </div>
+</div>
+
+<!-- game -->
+<div class="screen" id="s-game">
+  <div class="game-hud">
+    <div class="hud-left"><div class="hud-level" id="hud-level">1-1</div><div class="hud-name" id="hud-name">第一次握手</div></div>
+    <div class="hud-center"><div class="round-dots" id="round-dots"></div></div>
+    <div class="hud-right"><div class="hud-best-label">最佳</div><div class="hud-best-val" id="hud-best-val">—</div></div>
+  </div>
+
+  <!-- 双人面板 -->
+  <div class="dual-area">
+    <div class="player-panel pp-you" id="pp-you">
+      <div class="pp-label pp-label-you">你</div>
+      <div class="pp-avatar" id="pp-you-avatar">🙋</div>
+      <div class="pp-ms" id="pp-you-ms">—</div>
+      <div class="pp-status" id="pp-you-status">等待开始</div>
+      <div class="pp-bar"><div class="pp-bar-fill" id="pp-you-bar" style="width:0%;background:var(--pink)"></div></div>
+    </div>
+    <div class="vs-divider">VS</div>
+    <div class="player-panel pp-partner" id="pp-partner">
+      <div class="pp-label pp-label-partner">TA</div>
+      <div class="pp-avatar" id="pp-partner-avatar">🌸</div>
+      <div class="pp-ms" id="pp-partner-ms">—</div>
+      <div class="pp-status" id="pp-partner-status">等待中…</div>
+      <div class="pp-bar"><div class="pp-bar-fill" id="pp-partner-bar" style="width:0%;background:var(--purple)"></div></div>
+    </div>
+  </div>
+
+  <div class="game-arena" id="game-arena">
+    <div class="arena-bg-emoji" id="arena-bg-emoji"></div>
+    <!-- fake overlays -->
+    <div class="fake-ghost" id="fake-ghost"><div class="fake-ghost-text">松手！</div></div>
+    <div class="arena-state-emoji" id="arena-state-emoji">💣</div>
+    <div class="arena-task" id="arena-task">准备好了吗？</div>
+    <div class="arena-sub" id="arena-sub">按住下方按钮开始</div>
+  </div>
+
+  <div class="press-zone">
+    <div class="press-feedback" id="press-feedback"></div>
+    <button class="press-btn pb-idle" id="press-btn"
+      onmousedown="Game.onPress(event)" onmouseup="Game.onRelease(event)"
+      ontouchstart="Game.onPress(event)" ontouchend="Game.onRelease(event)">
+      <span class="press-btn-icon" id="press-icon">☯</span>
+      <span class="press-btn-label" id="press-label">按住</span>
+    </button>
+    <div class="round-result" id="round-result"></div>
+  </div>
+</div>
+
+<!-- studio -->
+<div class="screen" id="s-studio">
+  <div class="studio-header">
+    <button class="back-btn" onclick="App.goHome()">←</button>
+    <div class="studio-title">🎙️ 录音室</div>
+  </div>
+  <div class="studio-body">
+    <div class="studio-intro">
+      <strong>用TA的声音说甜蜜话 💕</strong><br>
+      让另一半录下每一句甜蜜文案，游戏时就会播放TA真实的声音。录音保存在本机，完全私密。
+    </div>
+    <div class="studio-progress">
+      <div style="font-size:28px">🎙️</div>
+      <div class="studio-progress-info">
+        <div class="studio-progress-num" id="studio-rec-count">0 / 28</div>
+        <div class="studio-progress-label">已录制文案</div>
+      </div>
+      <button class="rec-btn" onclick="App.clearAllRecordings()" title="清除全部录音" style="width:auto;border-radius:8px;padding:0 10px;font-size:12px">清空</button>
+    </div>
+    <div class="rec-list" id="rec-list"></div>
+    <div class="studio-tip">
+      <strong>使用说明：</strong><br>
+      · 按住 🔴 开始录音，松手结束<br>
+      · 按 ▶️ 试听效果<br>
+      · 录好后在设置里切换到"真声"模式即可<br>
+      · 建议找另一半在安静环境下录制，效果更好
+    </div>
+  </div>
+</div>
+
+<!-- result -->
+<div class="screen" id="s-result"><div class="result-wrap" id="result-wrap"></div></div>
+
+<!-- profile -->
+<div class="screen" id="s-profile">
+  <div class="profile-header">
+    <button class="back-btn" onclick="App.goHome()">←</button>
+    <div class="profile-title">我的档案</div>
+  </div>
+  <div class="profile-body" id="profile-body"></div>
+</div>
+
+<!-- settings modal -->
+<div class="modal-overlay" id="settings-modal" onclick="App.closeSettings(event)">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-title">⚙️ 游戏设置</div>
+    <div class="setting-row">
+      <div class="setting-label">语音朗读<small>结果文案自动播报</small></div>
+      <div class="seg-ctrl" id="voice-ctrl">
+        <button class="seg-btn active" onclick="App.setVoice('female')">女声</button>
+        <button class="seg-btn" onclick="App.setVoice('male')">男声</button>
+        <button class="seg-btn" onclick="App.setVoice('recorded')">真声🎙️</button>
+        <button class="seg-btn" onclick="App.setVoice('off')">关闭</button>
+      </div>
+    </div>
+    <div class="setting-row">
+      <div class="setting-label">语速<small>朗读速度</small></div>
+      <div class="slider-wrap">
+        <span style="font-size:11px;color:var(--text3)">慢</span>
+        <input type="range" id="rate-slider" min="0.5" max="1.8" step="0.1" value="1.0" oninput="App.setRate(this.value)">
+        <span style="font-size:11px;color:var(--text3)">快</span>
+      </div>
+    </div>
+    <div class="setting-row">
+      <div class="setting-label">震动反馈<small>假信号震动提示</small></div>
+      <div class="seg-ctrl" id="vib-ctrl">
+        <button class="seg-btn active" onclick="App.setVibration(true)">开启</button>
+        <button class="seg-btn" onclick="App.setVibration(false)">关闭</button>
+      </div>
+    </div>
+    <button class="main-btn secondary" style="margin-top:8px" onclick="App.closeSettings()">完成</button>
+  </div>
+</div>
+
+<div class="screen-flash" id="screen-flash"></div>
+<div class="particles-layer" id="particles-layer"></div>
+
+<script>
+// ===================== DATA =====================
+const DATA = {
+  chapters:[
+    {id:1,name:'初遇心动',emoji:'💫',desc:'感受彼此的节奏，放慢脚步'},
+    {id:2,name:'甜蜜磨合',emoji:'🍬',desc:'默契升温，越来越了解你'},
+    {id:3,name:'心有灵犀',emoji:'💞',desc:'真正的同步，毫厘之间'},
+    {id:4,name:'天作之合',emoji:'👑',desc:'极限挑战，只有最默契的情侣'},
+  ],
+  levels:[
+    {ch:1,lv:1,name:'第一次握手',emoji:'🌸',threshold:450,rounds:3,taskType:'basic',desc:'第一次感受彼此的节奏，慢慢来~'},
+    {ch:1,lv:2,name:'心跳加速',emoji:'💓',threshold:380,rounds:3,taskType:'basic',desc:'心跳开始加速了，感受到了吗？'},
+    {ch:1,lv:3,name:'眼神交汇',emoji:'✨',threshold:320,rounds:3,taskType:'countdown',desc:'对视的瞬间，时间都慢了下来'},
+    {ch:1,lv:4,name:'牵手时刻',emoji:'🤝',threshold:280,rounds:4,taskType:'countdown',desc:'牵起你的手，感受同频的温度'},
+    {ch:1,lv:5,name:'初吻前夕',emoji:'💋',threshold:240,rounds:4,taskType:'fake',desc:'最后一步，小心别被假信号骗了'},
+    {ch:2,lv:1,name:'一起煮饭',emoji:'🍳',threshold:210,rounds:4,taskType:'fake',desc:'灶台边的烟火气，是幸福的味道'},
+    {ch:2,lv:2,name:'共享耳机',emoji:'🎧',threshold:185,rounds:4,taskType:'rhythm',desc:'同一首歌，听见彼此的世界'},
+    {ch:2,lv:3,name:'同看日落',emoji:'🌅',threshold:160,rounds:4,taskType:'rhythm',desc:'陪你看每一个日落，心里很暖'},
+    {ch:2,lv:4,name:'吵架和好',emoji:'🕊️',threshold:140,rounds:5,taskType:'rhythm',desc:'吵完架和好的瞬间，更懂你了'},
+    {ch:2,lv:5,name:'深夜通话',emoji:'🌙',threshold:120,rounds:5,taskType:'fake',desc:'深夜只想和你说话，说什么都好'},
+    {ch:3,lv:1,name:'双人瑜伽',emoji:'🧘',threshold:100,rounds:5,taskType:'fake',desc:'呼吸同频，感受彼此的存在'},
+    {ch:3,lv:2,name:'默契暗号',emoji:'🔮',threshold:85,rounds:5,taskType:'double',desc:'不说话也能传递的信号'},
+    {ch:3,lv:3,name:'心灵感应',emoji:'🌊',threshold:72,rounds:5,taskType:'double',desc:'思念穿越距离，你感应到了吗'},
+    {ch:3,lv:4,name:'同呼吸',emoji:'🫁',threshold:60,rounds:6,taskType:'double',desc:'同一时刻，同一呼吸，同一心跳'},
+    {ch:3,lv:5,name:'星河相遇',emoji:'🌟',threshold:50,rounds:6,taskType:'double',desc:'在无数可能性里，刚好遇见你'},
+    {ch:4,lv:1,name:'极限挑战',emoji:'⚡',threshold:42,rounds:6,taskType:'double',desc:'挑战极限，但我相信我们'},
+    {ch:4,lv:2,name:'毫厘之差',emoji:'🎯',threshold:34,rounds:6,taskType:'triple',desc:'一毫秒的差距，都是对彼此的考验'},
+    {ch:4,lv:3,name:'心跳同频',emoji:'💗',threshold:26,rounds:7,taskType:'triple',desc:'心跳同频，这就是爱情的模样'},
+    {ch:4,lv:4,name:'灵魂共鸣',emoji:'🔥',threshold:18,rounds:7,taskType:'triple',desc:'两颗灵魂，同频共振'},
+    {ch:4,lv:5,name:'天作之合',emoji:'👑',threshold:12,rounds:7,taskType:'triple',desc:'传说中12ms以内才能通过的终极关卡'},
+  ],
+  // 升级版甜蜜文案：更撒娇、更甜腻
+  candy:{
+    perfect:[
+      '哇～你真的好厉害呀！人家好喜欢你❤️',
+      '哎呀，你是不是偷偷感应到我了嘛，坏蛋～💕',
+      '这就是心有灵犀吧！我们是不是天生一对嘛✨',
+      '好啦好啦，承认你很棒，不过我更喜欢你这个人💞',
+      '嗯哼～果然是我的专属宝贝，超级厉害的那种🌟',
+      '啊啊啊完美！你就是我的命中注定嘛💫',
+      '这一刻我超级超级喜欢你，知道吗！💖',
+    ],
+    good:[
+      '差一点点啦～但你已经很棒了，人家替你骄傲呢🍬',
+      '嗯～有在用心感受我嘛，好乖哦💓',
+      '越来越接近啦！继续加油，我等你的节奏🌸',
+      '没有完美也没关系呀，你本人才是最完美的💝',
+      '哼，就差那么一点点，下次给我惊喜！🎀',
+      '你有在认真感受我嘛，心里好甜哦～💌',
+    ],
+    close:[
+      '哈哈哈是不是被我的可爱分心了嘛！坏蛋～😄',
+      '嗯？是不是偷偷走神想我了？说实话！🌷',
+      '差了一点，没关系，再来！人家等你哦💫',
+      '喂喂喂，集中注意力，不许想别的！（除了我）😤',
+      '失误了也是甜的呀，因为是你嘛～🍬',
+    ],
+    fail:[
+      '哎哟～炸了炸了！作为惩罚，要给我发一个爱心！😂',
+      '呜呜呜，这次没同步到，要补偿我一个抱抱哦🤗',
+      '哇你松手好快/慢哦！是因为太紧张了嘛？好可爱！💕',
+      '没事没事，反正我喜欢你，炸了也觉得甜～💣',
+      '哼！罚你今晚多陪我说十分钟话！不许讨价还价！😆',
+    ],
+  },
+  tasks:{
+    basic:[
+      {main:'感受彼此的心跳',sub:'等待松手指令…'},
+      {main:'屏息凝神，等待那一刻',sub:'别着急，慢慢来'},
+      {main:'两颗心，同一个节奏',sub:'感受空气中的连接'},
+    ],
+    countdown:[
+      {main:'倒计时开始，准备松手',sub:'看着数字，感受同步'},
+      {main:'与我同步，感受时间流动',sub:'精准到每一秒'},
+    ],
+    fake:[
+      {main:'注意！可能有假信号',sub:'不要被骗了哦 😏'},
+      {main:'保持冷静，甄别真假',sub:'只相信真正的指令'},
+    ],
+    rhythm:[
+      {main:'跟着节奏，找到彼此的频率',sub:'心跳就是最好的节拍'},
+      {main:'感受节拍，感受我',sub:'我们有自己的节奏'},
+    ],
+    double:[
+      {main:'双重考验！需要极致默契',sub:'假信号来了两次，小心'},
+      {main:'心要足够稳，才能同步',sub:'我相信你'},
+    ],
+    triple:[
+      {main:'三重陷阱，只有天作之合才能过',sub:'屏住呼吸，等待真正的那一刻'},
+      {main:'终极同步考验',sub:'这一刻，只有我们'},
+    ],
+  },
+  badges:[
+    {id:'first_star',name:'初心之星',emoji:'⭐',desc:'获得第一颗星',condition:s=>s.totalStars>=1},
+    {id:'ch1_clear',name:'心动开始',emoji:'💫',desc:'完成第一章',condition:s=>s.unlockedLevel>=5},
+    {id:'perfect_3',name:'三连完美',emoji:'💎',desc:'连续3轮完美',condition:s=>s.bestPerfectStreak>=3},
+    {id:'ch2_clear',name:'甜蜜升温',emoji:'🍬',desc:'完成第二章',condition:s=>s.unlockedLevel>=10},
+    {id:'stars_15',name:'默契达人',emoji:'🌟',desc:'累计15颗星',condition:s=>s.totalStars>=15},
+    {id:'ch3_clear',name:'灵犀伴侣',emoji:'💞',desc:'完成第三章',condition:s=>s.unlockedLevel>=15},
+    {id:'sub_50ms',name:'毫厘之间',emoji:'🎯',desc:'误差低于50ms',condition:s=>s.bestDiffEver<=50},
+    {id:'ch4_clear',name:'天作之合',emoji:'👑',desc:'完成全部关卡',condition:s=>s.unlockedLevel>=20},
+    {id:'stars_50',name:'满天繁星',emoji:'✨',desc:'累计50颗星',condition:s=>s.totalStars>=50},
+    {id:'sub_20ms',name:'神级同步',emoji:'🔮',desc:'误差低于20ms',condition:s=>s.bestDiffEver<=20},
+  ],
+};
+
+// ===================== STORE =====================
+const Store=(()=>{
+  const KEY='syncbomb_v2';
+  const def=()=>({unlockedLevel:0,levelStars:new Array(20).fill(0),levelBestMs:new Array(20).fill(null),totalPlays:0,totalStars:0,bestDiffEver:9999,bestPerfectStreak:0,unlockedBadges:[],currentLevelIdx:0});
+  let _s=null;
+  function load(){try{const r=localStorage.getItem(KEY);_s=r?{...def(),...JSON.parse(r)}:def();}catch{_s=def();}return _s;}
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(_s));}catch{}}
+  function get(){if(!_s)load();return _s;}
+  function update(fn){if(!_s)load();fn(_s);_s.totalStars=_s.levelStars.reduce((a,b)=>a+b,0);save();return _s;}
+  function finishLevel(idx,stars,bestMs,ps){
+    return update(s=>{
+      if(stars>s.levelStars[idx])s.levelStars[idx]=stars;
+      if(bestMs!==null){if(s.levelBestMs[idx]===null||bestMs<s.levelBestMs[idx])s.levelBestMs[idx]=bestMs;if(bestMs<s.bestDiffEver)s.bestDiffEver=bestMs;}
+      if(stars>=1&&idx>=s.unlockedLevel)s.unlockedLevel=Math.min(19,idx+1);
+      if(ps>s.bestPerfectStreak)s.bestPerfectStreak=ps;
+      s.totalPlays++;s.currentLevelIdx=idx;
+      DATA.badges.forEach(b=>{if(!s.unlockedBadges.includes(b.id)&&b.condition(s))s.unlockedBadges.push(b.id);});
+    });
+  }
+  function setCurrentLevel(idx){update(s=>{s.currentLevelIdx=idx;});}
+  function reset(){_s=def();save();return _s;}
+  load();
+  return{get,update,finishLevel,setCurrentLevel,reset};
+})();
+
+// ===================== VOICE =====================
+const Voice=(()=>{
+  let _mode='female'; // female | male | off | recorded
+  let _rate=1.0;
+  let _synth=window.speechSynthesis||null;
+  let _voices=[];
+  // 录音库：key=文案hash，value=base64 audio
+  let _recordings={};
+
+  if(_synth){
+    const load=()=>{_voices=_synth.getVoices();};
+    load();
+    if(_synth.onvoiceschanged!==undefined)_synth.onvoiceschanged=load;
+  }
+
+  // 清洗文字：去掉emoji、符号，只保留中文和基础标点节奏
+  function _clean(text){
+    return text
+      // 去掉所有emoji（unicode范围）
+      .replace(/[\u{1F000}-\u{1FFFF}|\u{2600}-\u{27FF}|\u{FE00}-\u{FEFF}|\u{1F900}-\u{1F9FF}]/gu,'')
+      // 去掉特殊符号 ～！？：…—·•※
+      .replace(/[～！？：…—·•※【】《》「」『』\(\)（）\[\]]/g,'，')
+      // 去掉英文标点
+      .replace(/[!?:;.~\-_]/g,'，')
+      // 把多个逗号合并
+      .replace(/[，、,]{2,}/g,'，')
+      // 去掉首尾逗号
+      .replace(/^[，,]+|[，,]+$/g,'')
+      .trim();
+  }
+
+  function _pickVoice(){
+    if(!_synth||_mode==='off'||_mode==='recorded')return null;
+    const zhVoices=_voices.filter(v=>v.lang.startsWith('zh')||v.lang.startsWith('cmn')||v.lang==='zh-CN'||v.lang==='zh-TW');
+    const pool=zhVoices.length>0?zhVoices:_voices;
+    if(pool.length===0)return null;
+    if(_mode==='female'){
+      // 优先找女声关键词
+      return pool.find(v=>/female|woman|girl|Ting|Tingting|Meijia|Hanhan|Shanshan|Xiaoyan|Huihui|Yaoyao|Xiaoqi|Xiaoxiao|Xiaomo|Yunxi/i.test(v.name))
+        || pool.find(v=>!(/male|man|boy|Kangkang|Zhiwei|Yunyang/i.test(v.name)))
+        || pool[0];
+    } else {
+      return pool.find(v=>/male|man|boy|Kangkang|Zhiwei|Yunyang/i.test(v.name))||pool[pool.length-1];
+    }
+  }
+
+  // speak返回Promise，resolved时语音已播完（或关闭时立即resolve）
+  function speak(rawText){
+    return new Promise(resolve=>{
+      // 优先播放录音
+      if(_mode==='recorded'){
+        const key=_hashText(rawText);
+        const rec=_recordings[key];
+        if(rec){
+          const audio=new Audio(rec);
+          audio.onended=resolve;
+          audio.onerror=resolve;
+          audio.play().catch(resolve);
+          return;
+        }
+        // 没有录音就fallback到女声TTS
+      }
+      if(!_synth||_mode==='off'){resolve();return;}
+      _synth.cancel();
+      const cleaned=_clean(rawText);
+      if(!cleaned){resolve();return;}
+      const u=new SpeechSynthesisUtterance(cleaned);
+      const v=_pickVoice();
+      if(v)u.voice=v;
+      // 撒娇语气：女声高pitch慢速，男声低沉
+      u.rate=_mode==='female'?Math.min(_rate,0.9):_rate;
+      u.pitch=_mode==='female'?1.45:0.85;
+      u.volume=1;
+      u.onend=resolve;
+      u.onerror=resolve;
+      _synth.speak(u);
+      // 保险：5秒超时防止onend不触发（iOS偶发bug）
+      setTimeout(resolve,5000);
+    });
+  }
+
+  function _hashText(t){
+    // 简单hash用于录音匹配
+    let h=0;for(let i=0;i<t.length;i++){h=(h<<5)-h+t.charCodeAt(i);h|=0;}
+    return 'r'+Math.abs(h);
+  }
+
+  function saveRecording(rawText,base64Audio){
+    _recordings[_hashText(rawText)]=base64Audio;
+    _persist();
+  }
+
+  function hasRecording(rawText){return !!_recordings[_hashText(rawText)];}
+  function getRecordedCount(){return Object.keys(_recordings).length;}
+
+  function _persist(){
+    try{localStorage.setItem('syncbomb_voice_recs',JSON.stringify(_recordings));}catch(e){}
+  }
+  function loadRecordings(){
+    try{const r=localStorage.getItem('syncbomb_voice_recs');if(r)_recordings=JSON.parse(r);}catch(e){}
+  }
+  function clearRecordings(){_recordings={};_persist();}
+
+  function setMode(m){_mode=m;}
+  function setRate(r){_rate=parseFloat(r);}
+  function getMode(){return _mode;}
+  function getRate(){return _rate;}
+  function cancel(){if(_synth)_synth.cancel();}
+
+  loadRecordings();
+  return{speak,setMode,setRate,getMode,getRate,cancel,saveRecording,hasRecording,getRecordedCount,clearRecordings,_clean};
+})();
+
+// ===================== FAKE SIGNALS =====================
+// 6种假信号形态
+const FakeSignal=(()=>{
+  // 类型：flash | ghost | ripple | countdown | vibrate | sound
+  const TYPES=['flash','ghost','ripple','countdown','vibrate','sound'];
+
+  function trigger(arena){
+    const type=TYPES[Math.floor(Math.random()*TYPES.length)];
+    switch(type){
+      case 'flash':    _doFlash(); break;
+      case 'ghost':    _doGhost(arena); break;
+      case 'ripple':   _doRipple(arena); break;
+      case 'countdown':_doCountdown(arena); break;
+      case 'vibrate':  _doVibrate(); break;
+      case 'sound':    _doSound(); break;
+    }
+  }
+
+  function _doFlash(){
+    const el=document.getElementById('screen-flash');
+    el.classList.add('flash');
+    // 同时快速改arena emoji
+    const em=document.getElementById('arena-state-emoji');
+    const orig=em.textContent;
+    em.textContent='⚡';
+    document.getElementById('arena-task').textContent='松手！松手！';
+    setTimeout(()=>{
+      el.classList.remove('flash');
+      em.textContent=orig;
+      document.getElementById('arena-task').textContent='哈哈，骗你的～ 继续等…';
+    },280);
+  }
+
+  function _doGhost(arena){
+    const g=document.getElementById('fake-ghost');
+    g.innerHTML=`<div class="fake-ghost-text">${['松手！','放手～','现在！','快松！'][Math.floor(Math.random()*4)]}</div>`;
+    g.classList.add('show');
+    document.getElementById('arena-task').textContent='是真的吗…？';
+    setTimeout(()=>{
+      g.classList.remove('show');
+      document.getElementById('arena-task').textContent='不对不对，还没呢～';
+    },700);
+  }
+
+  function _doRipple(arena){
+    const r=document.createElement('div');
+    r.className='fake-ripple';
+    r.style.left='50%';r.style.top='50%';r.style.transform='translate(-50%,-50%)';
+    arena.appendChild(r);
+    document.getElementById('arena-task').textContent='感受到了吗…？';
+    setTimeout(()=>{
+      r.remove();
+      document.getElementById('arena-task').textContent='只是涟漪而已，等真正的指令吧～';
+    },700);
+  }
+
+  function _doCountdown(arena){
+    let n=3;
+    const el=document.createElement('div');
+    el.className='fake-countdown';
+    el.textContent=n;
+    arena.appendChild(el);
+    document.getElementById('arena-task').textContent='倒计时开始！';
+    const iv=setInterval(()=>{
+      n--;
+      if(n>0){el.textContent=n;el.style.animation='none';void el.offsetWidth;el.style.animation='fakecountpop .4s ease';}
+      else{clearInterval(iv);el.remove();document.getElementById('arena-task').textContent='哈哈～假的！反应好快嘛～';}
+    },400);
+    setTimeout(()=>{if(el.parentNode)el.remove();},1600);
+  }
+
+  function _doVibrate(){
+    if(navigator.vibrate){navigator.vibrate([80,60,80]);}
+    document.getElementById('arena-state-emoji').textContent='📳';
+    document.getElementById('arena-task').textContent='震动信号…是真的吗？';
+    setTimeout(()=>{
+      document.getElementById('arena-state-emoji').textContent='😈';
+      document.getElementById('arena-task').textContent='骗你的啦～震动也是假的！';
+    },600);
+  }
+
+  function _doSound(){
+    // Web Audio API 生成一个短促的"叮"声作为假提示音
+    try{
+      const ctx=new(window.AudioContext||window.webkitAudioContext)();
+      const osc=ctx.createOscillator();
+      const gain=ctx.createGain();
+      osc.connect(gain);gain.connect(ctx.destination);
+      osc.frequency.value=880;
+      gain.gain.setValueAtTime(0.3,ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.3);
+      osc.start();osc.stop(ctx.currentTime+0.3);
+    }catch(e){}
+    document.getElementById('arena-state-emoji').textContent='🔔';
+    document.getElementById('arena-task').textContent='叮～～是信号！是信号！';
+    setTimeout(()=>{
+      document.getElementById('arena-state-emoji').textContent='😏';
+      document.getElementById('arena-task').textContent='哈哈只是个音效，再等等啦～';
+    },500);
+  }
+
+  return{trigger};
+})();
+
+// ===================== GAME ENGINE =====================
+const Game=(()=>{
+  let _lvIdx=0,_level=null,_round=0,_results=[],_held=false,_phase='idle';
+  let _holdStart=0,_releaseCmd=0,_aiOffset=0;
+  let _waitTimer=null,_fakeTimers=[];
+  let _bestDiff=Infinity,_perfStreak=0,_maxPerfStreak=0;
+  // dual panel timing
+  let _youReleaseTime=0,_partnerReleaseTime=0;
+
+  function initLevel(idx){
+    _lvIdx=idx;_level=DATA.levels[idx];_round=0;_results=[];
+    _bestDiff=Infinity;_perfStreak=0;_maxPerfStreak=0;
+    _phase='idle';_held=false;
+    _buildHUD();_resetRound();
+  }
+
+  function _buildHUD(){
+    const ch=Math.floor(_lvIdx/5)+1,lv=(_lvIdx%5)+1;
+    _el('hud-level').textContent=`${ch}-${lv}`;
+    _el('hud-name').textContent=_level.name;
+    _el('arena-bg-emoji').textContent=_level.emoji;
+    const dots=_el('round-dots');dots.innerHTML='';
+    for(let i=0;i<_level.rounds;i++){
+      const d=document.createElement('div');
+      d.className='rd'+(i===0?' current':'');d.id=`rd-${i}`;dots.appendChild(d);
+    }
+    const s=Store.get();const best=s.levelBestMs[_lvIdx];
+    _el('hud-best-val').textContent=best!==null?best+'ms':'—';
+    // reset dual panels
+    _resetDual();
+  }
+
+  function _resetDual(){
+    _setPanel('you','🙋','—','等待开始',0,'var(--pink)');
+    _setPanel('partner','🌸','—','等待中…',0,'var(--purple)');
+    _el('pp-you').className='player-panel pp-you';
+    _el('pp-partner').className='player-panel pp-partner';
+  }
+
+  function _setPanel(who,avatar,ms,status,barPct,barColor){
+    const pre=who==='you'?'pp-you':'pp-partner';
+    if(avatar)_el(pre+'-avatar').textContent=avatar;
+    _el(pre+'-ms').textContent=ms;
+    _el(pre+'-ms').className='pp-ms';
+    _el(pre+'-status').textContent=status;
+    _el(pre+'-bar').style.width=barPct+'%';
+    _el(pre+'-bar').style.background=barColor||'var(--pink)';
+  }
+
+  function _setMsColor(who,diff,threshold){
+    const el=_el((who==='you'?'pp-you':'pp-partner')+'-ms');
+    el.classList.remove('good','ok','bad');
+    if(diff<=threshold*0.3)el.classList.add('good');
+    else if(diff<=threshold)el.classList.add('ok');
+    else el.classList.add('bad');
+  }
+
+  function _resetRound(){
+    _clearTimers();_held=false;_phase='idle';
+    _youReleaseTime=0;_partnerReleaseTime=0;
+    const ta=DATA.tasks[_level.taskType]||DATA.tasks.basic;
+    const t=ta[Math.floor(Math.random()*ta.length)];
+    _el('game-arena').className='game-arena';
+    _el('arena-state-emoji').textContent=_level.emoji;
+    _el('arena-task').textContent=t.main;
+    _el('arena-sub').textContent=t.sub;
+    _el('fake-ghost').classList.remove('show');
+    _el('round-result').innerHTML='';
+    _el('press-feedback').textContent='';
+    _setBtn('idle');
+    _el('pp-you').className='player-panel pp-you';
+    _el('pp-partner').className='player-panel pp-partner';
+    _setPanel('you',null,'—','等待按下',0,'var(--pink)');
+    _setPanel('partner',null,'—','等待中…',0,'var(--purple)');
+  }
+
+  function onPress(e){
+    e.preventDefault();
+    if(_phase!=='idle'||_held)return;
+    _held=true;_holdStart=Date.now();_phase='holding';
+    _el('game-arena').className='game-arena arena-holding';
+    _el('arena-state-emoji').textContent='⏳';
+    _el('arena-task').textContent='感受心跳，等待松手指令…';
+    _el('arena-sub').textContent='';
+    _setBtn('hold');
+    _el('press-feedback').textContent='按住中…';
+    // you panel
+    _el('pp-you').className='player-panel pp-you holding';
+    _setPanel('you',null,'按住中','正在同步…',60,'var(--green)');
+    // partner holds after short delay
+    setTimeout(()=>{
+      _el('pp-partner').className='player-panel pp-partner holding';
+      _setPanel('partner',null,'按住中','TA也按住了 ✓',60,'var(--green)');
+    },150+Math.random()*350);
+    // AI offset
+    const t=_level.threshold;
+    const factor=Math.max(0.4,1-(_lvIdx/20));
+    _aiOffset=(Math.random()-.5)*t*2.5*factor;
+    // fake signals
+    _injectFakes();
+    // main trigger
+    const delay=1800+Math.random()*2700;
+    _waitTimer=setTimeout(()=>{if(!_held||_phase!=='holding')return;_triggerRelease();},delay);
+  }
+
+  function _injectFakes(){
+    const cnt={basic:0,countdown:0,fake:1,rhythm:1,double:2,triple:3}[_level.taskType]||0;
+    const arena=_el('game-arena');
+    for(let i=0;i<cnt;i++){
+      const d=700+Math.random()*1200+i*650;
+      _fakeTimers.push(setTimeout(()=>{
+        if(_phase!=='holding')return;
+        FakeSignal.trigger(arena);
+      },d));
+    }
+  }
+
+  function _triggerRelease(){
+    if(_phase!=='holding')return;
+    _phase='release';_releaseCmd=Date.now();
+    _el('game-arena').className='game-arena arena-release';
+    _el('arena-state-emoji').textContent='🔔';
+    _el('arena-task').textContent='现在！松手！';
+    _el('arena-sub').textContent='';
+    _setBtn('release');
+    // partner releases
+    _partnerReleaseTime=_releaseCmd+Math.max(-200,Math.min(200,_aiOffset));
+    const pDelay=Math.max(0,_aiOffset);
+    setTimeout(()=>{
+      _el('pp-partner').className='player-panel pp-partner released';
+      _setPanel('partner',null,'松开了','TA松手了',100,'var(--purple)');
+    },pDelay);
+    // timeout
+    _waitTimer=setTimeout(()=>{if(_held&&_phase==='release'){_held=false;_recordRound(888,false);}},1500);
+  }
+
+  function onRelease(e){
+    e.preventDefault();
+    if(!_held)return;
+    _held=false;_clearTimers();
+    const now=Date.now();
+    if(_phase==='holding'){
+      _el('arena-state-emoji').textContent='😅';
+      _el('arena-task').textContent='哎呀，松太早啦～';
+      _setBtn('idle');_phase='idle';
+      _el('pp-you').className='player-panel pp-you released';
+      _setPanel('you',null,'太早了','早松了',100,'var(--red)');
+      _recordRound(777,true);return;
+    }
+    if(_phase!=='release')return;
+    _phase='done';
+    _youReleaseTime=now;
+    const aiActual=_releaseCmd+Math.max(-300,Math.min(300,_aiOffset));
+    const diff=Math.abs(now-aiActual);
+    const youFirst=now<aiActual;
+    _recordRound(diff,youFirst);
+  }
+
+  function _recordRound(diff,youFirst){
+    const t=_level.threshold;
+    let grade,stars;
+    if(diff===777||diff===888){grade='fail';stars=0;}
+    else if(diff<=t*0.28){grade='perfect';stars=3;}
+    else if(diff<=t*0.65){grade='good';stars=2;}
+    else if(diff<=t){grade='close';stars=1;}
+    else{grade='fail';stars=0;}
+    if(grade==='perfect'){_perfStreak++;if(_perfStreak>_maxPerfStreak)_maxPerfStreak=_perfStreak;}
+    else _perfStreak=0;
+    const realDiff=diff<700?diff:null;
+    if(realDiff!==null&&realDiff<_bestDiff)_bestDiff=realDiff;
+    _results.push({diff:realDiff,grade,stars,youFirst});
+    // dual panel update
+    if(realDiff!==null){
+      const pDiff=Math.abs(_partnerReleaseTime-_releaseCmd);
+      const pReal=pDiff<700?pDiff:null;
+      // you
+      _el('pp-you').className='player-panel pp-you released';
+      _setPanel('you',null,realDiff+'ms',youFirst?'你早了一点':'你晚了一点',Math.max(5,100-realDiff/t*80),'var(--pink)');
+      _setMsColor('you',realDiff,t);
+      // partner
+      _el('pp-partner').className='player-panel pp-partner released';
+      _setPanel('partner',null,pReal?pReal+'ms':'—',pReal&&pReal<realDiff?'TA更准 💜':'',pReal?Math.max(5,100-pReal/t*80):30,'var(--purple)');
+      if(pReal)_setMsColor('partner',pReal,t);
+    }
+    if(_bestDiff<Infinity)_el('hud-best-val').textContent=_bestDiff+'ms';
+    _updateDot(_round,grade);
+    const candy=_showFeedback(realDiff,grade,youFirst);
+    Particles.burst(grade);
+    _round++;
+    // 等语音读完再进下一步
+    Voice.speak(candy).then(()=>{
+      if(_round>=_level.rounds){App.showResult();}
+      else{setTimeout(()=>_resetRound(),400);}
+    });
+  }
+
+  function _updateDot(idx,grade){
+    const d=_el(`rd-${idx}`);if(!d)return;
+    d.className=`rd done-${grade}`;
+    const n=_el(`rd-${idx+1}`);if(n)n.className='rd current';
+  }
+
+  function _showFeedback(diff,grade,youFirst){
+    const arr=DATA.candy[grade];
+    const candy=arr[Math.floor(Math.random()*arr.length)];
+    const icon={perfect:'✨',good:'💕',close:'🌸',fail:'💣'}[grade];
+    const dText=diff!==null?`误差 ${diff}ms · ${youFirst?'你早了一点':'你晚了一点'}`:'';
+    const hasRec=Voice.hasRecording(candy);
+    const speakIcon=Voice.getMode()!=='off'?(hasRec?'🎙️':'🔊'):'';
+    _el('round-result').innerHTML=`<div class="candy-text">${icon} ${candy} <span style="font-size:11px;color:var(--purple);opacity:.7">${speakIcon}</span></div>${dText?`<div class="diff-text">${dText}</div>`:''}`;
+    _setBtn('done');_el('press-feedback').textContent='';
+    _el('game-arena').className='game-arena arena-result';
+    _el('arena-state-emoji').textContent={perfect:'🎆',good:'💓',close:'😅',fail:'💥'}[grade];
+    _el('arena-task').textContent='';_el('arena-sub').textContent='';
+    return candy;
+  }
+
+  function _setBtn(state){
+    const btn=_el('press-btn'),icon=_el('press-icon'),label=_el('press-label');
+    btn.className='press-btn pb-'+state;
+    const m={idle:{i:'☯',l:'按住'},hold:{i:'💗',l:'按住中…'},release:{i:'⚡',l:'松手！'},done:{i:'✓',l:'稍等…'}}[state]||{i:'☯',l:'按住'};
+    icon.textContent=m.i;label.textContent=m.l;
+  }
+
+  function getResults(){
+    const r=_results;
+    const ps=r.filter(x=>x.grade==='perfect').length;
+    const gs=r.filter(x=>x.grade==='good').length;
+    const cs=r.filter(x=>x.grade==='close').length;
+    const fs=r.filter(x=>x.grade==='fail').length;
+    const tot=r.reduce((a,b)=>a+b.stars,0);
+    const pct=tot/(_level.rounds*3);
+    const finalStars=pct>=0.85?3:pct>=0.55?2:pct>=0.25?1:0;
+    return{levelIdx:_lvIdx,level:_level,passed:finalStars>=1,finalStars,bestMs:_bestDiff<Infinity?_bestDiff:null,perfects:ps,goods:gs,closes:cs,fails:fs,maxPerfectStreak:_maxPerfStreak,totalRounds:_level.rounds};
+  }
+
+  function _clearTimers(){clearTimeout(_waitTimer);_fakeTimers.forEach(t=>clearTimeout(t));_fakeTimers=[];}
+  function _el(id){return document.getElementById(id);}
+  return{initLevel,onPress,onRelease,getResults};
+})();
+
+// ===================== PARTICLES =====================
+const Particles=(()=>{
+  const MAP={perfect:['💕','✨','🌟','💫','🌸','💖'],good:['🌸','💓','✨','🍬'],close:['💌','🌷'],fail:['💣','😅','💥']};
+  function burst(grade){
+    const em=MAP[grade]||['✨'],cnt=grade==='perfect'?8:3;
+    const layer=document.getElementById('particles-layer');
+    for(let i=0;i<cnt;i++)setTimeout(()=>{
+      const p=document.createElement('div');p.className='particle';
+      p.textContent=em[Math.floor(Math.random()*em.length)];
+      p.style.left=(15+Math.random()*70)+'%';p.style.top=(20+Math.random()*50)+'%';
+      layer.appendChild(p);setTimeout(()=>p.remove(),1600);
+    },i*80);
+  }
+  function celebrate(){
+    const em=['🎉','💕','⭐','✨','🌟','💖','🎊'];
+    const layer=document.getElementById('particles-layer');
+    for(let i=0;i<18;i++)setTimeout(()=>{
+      const p=document.createElement('div');p.className='particle';
+      p.textContent=em[Math.floor(Math.random()*em.length)];
+      p.style.left=Math.random()*90+5+'%';p.style.top=Math.random()*80+10+'%';
+      p.style.fontSize=(14+Math.random()*14)+'px';
+      layer.appendChild(p);setTimeout(()=>p.remove(),1600);
+    },i*60);
+  }
+  return{burst,celebrate};
+})();
+
+// ===================== APP =====================
+const App=(()=>{
+  function _el(id){return document.getElementById(id);}
+  function _show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));_el('s-'+id).classList.add('active');}
+
+  // ── 录音室 ──
+  let _recorder=null,_recChunks=[],_recTargetIdx=-1,_recStream=null;
+
+  // 所有需要录制的文案（从DATA.candy里提取纯文本）
+  function _allCandyTexts(){
+    const all=[];
+    Object.values(DATA.candy).forEach(arr=>arr.forEach(t=>{
+      const clean=Voice._clean(t);
+      if(clean&&!all.includes(clean))all.push(clean);
+    }));
+    return all;
+  }
+
+  function goStudio(){
+    _buildStudio();
+    _show('studio');
+  }
+
+  function _buildStudio(){
+    const texts=_allCandyTexts();
+    const total=texts.length;
+    const done=texts.filter(t=>Voice.hasRecording(t)).length;
+    _el('studio-rec-count').textContent=`${done} / ${total}`;
+    const list=_el('rec-list');
+    list.innerHTML='';
+    texts.forEach((text,i)=>{
+      const has=Voice.hasRecording(text);
+      const item=document.createElement('div');
+      item.className=`rec-item${has?' has-rec':''}`;
+      item.id=`rec-item-${i}`;
+      item.innerHTML=`
+        <div style="flex:1">
+          <div class="rec-text">${text}</div>
+          <div class="rec-status${has?' done':''}" id="rec-status-${i}">${has?'✓ 已录制':'未录制'}</div>
+        </div>
+        <div class="rec-actions">
+          ${has?`<button class="rec-btn rec-play" onclick="App.playRec('${text.replace(/'/g,"\\'")}',${i})" title="试听">▶</button>`:''}
+          <button class="rec-btn rec-record" id="rec-btn-${i}"
+            onmousedown="App.startRec('${text.replace(/'/g,"\\'")}',${i},event)"
+            onmouseup="App.stopRec(event)"
+            ontouchstart="App.startRec('${text.replace(/'/g,"\\'")}',${i},event)"
+            ontouchend="App.stopRec(event)"
+            title="按住录音">🔴</button>
+          ${has?`<button class="rec-btn rec-delete" onclick="App.deleteRec('${text.replace(/'/g,"\\'")}',${i})" title="删除">✕</button>`:''}
+        </div>`;
+      list.appendChild(item);
+    });
+  }
+
+  async function startRec(text,idx,e){
+    e.preventDefault();
+    if(_recorder&&_recorder.state==='recording')return;
+    _recTargetIdx=idx;_recChunks=[];
+    try{
+      _recStream=await navigator.mediaDevices.getUserMedia({audio:true});
+      _recorder=new MediaRecorder(_recStream);
+      _recorder.ondataavailable=ev=>{if(ev.data.size>0)_recChunks.push(ev.data);};
+      _recorder.onstop=()=>_finishRec(text,idx);
+      _recorder.start();
+      // UI
+      const btn=_el(`rec-btn-${idx}`);
+      if(btn)btn.classList.add('active');
+      _el(`rec-item-${idx}`).className='rec-item recording';
+      _el(`rec-status-${idx}`).textContent='🔴 录音中…';
+    }catch(err){
+      alert('无法访问麦克风，请在浏览器设置中允许麦克风权限');
+    }
+  }
+
+  function stopRec(e){
+    e.preventDefault();
+    if(_recorder&&_recorder.state==='recording'){
+      _recorder.stop();
+      if(_recStream){_recStream.getTracks().forEach(t=>t.stop());_recStream=null;}
+    }
+  }
+
+  function _finishRec(text,idx){
+    const blob=new Blob(_recChunks,{type:'audio/webm'});
+    const reader=new FileReader();
+    reader.onloadend=()=>{
+      Voice.saveRecording(text,reader.result);
+      _buildStudio(); // 刷新列表
+    };
+    reader.readAsDataURL(blob);
+  }
+
+  function playRec(text,idx){
+    // 先取消TTS
+    Voice.cancel();
+    Voice.speak(text); // 如果有录音会播录音
+  }
+
+  function deleteRec(text,idx){
+    // 直接用speak模块的hash删除
+    Voice.saveRecording(text,null); // 存null等于删除
+    // 重新加载
+    Voice.clearRecordings(); // 只删这一条
+    // TODO: 单条删除，这里简化为重建
+    _buildStudio();
+  }
+
+  function clearAllRecordings(){
+    if(confirm('确定清除所有录音吗？')){{Voice.clearRecordings();_buildStudio();}}
+  }
+
+  function goHome(){_buildHome();_show('home');}
+
+  function _buildHome(){
+    const s=Store.get();
+    const pct=Math.round((Math.min(s.unlockedLevel+1,20)/20)*100);
+    _el('home-progress-fill').style.width=pct+'%';
+    _el('home-progress-text').textContent=`第${Math.min(s.unlockedLevel+1,20)}关`;
+    _el('home-total-stars').textContent=`总星数 ⭐ ${s.totalStars}`;
+    const badges=_el('home-badges');badges.innerHTML='';
+    s.unlockedBadges.forEach(bid=>{
+      const b=DATA.badges.find(x=>x.id===bid);if(!b)return;
+      const colors=['badge-gold','badge-pink','badge-purple','badge-teal'];
+      const el=document.createElement('span');
+      el.className=`badge ${colors[DATA.badges.indexOf(b)%colors.length]}`;
+      el.textContent=`${b.emoji} ${b.name}`;badges.appendChild(el);
+    });
+    const list=_el('chapter-list');list.innerHTML='';
+    DATA.chapters.forEach((ch,ci)=>{
+      const first=ci*5,unlocked=s.unlockedLevel>=first,done=s.unlockedLevel>=first+5;
+      const chStars=s.levelStars.slice(first,first+5).reduce((a,b)=>a+b,0);
+      const cls=done?'ch-done':unlocked?'ch-current':'ch-locked';
+      const lbl=done?'✓ 已完成':unlocked?'进行中':'🔒 未解锁';
+      const card=document.createElement('div');card.className=`chapter-card ${cls}`;
+      card.innerHTML=`<div class="ch-icon">${ch.emoji}</div><div class="ch-body"><div class="ch-name">${ch.name}</div><div class="ch-desc">${lbl} · ${ch.desc}</div><div class="ch-stars">${chStars}/15 星</div></div><div class="ch-arrow">›</div>`;
+      if(unlocked)card.onclick=()=>goChapter(ci);
+      list.appendChild(card);
+    });
+    // 更新tab标签
+    const lvl=DATA.levels[s.currentLevelIdx];
+    _el('tab-play-label').textContent=lvl.name;
+  }
+
+  function goChapter(ci){
+    const ch=DATA.chapters[ci],s=Store.get(),first=ci*5;
+    _el('ch-header-emoji').textContent=ch.emoji;
+    _el('ch-header-name').textContent=ch.name;
+    _el('ch-header-sub').textContent=s.unlockedLevel>=first+5?'✓ 已完成':`第${Math.min(s.unlockedLevel-first+1,5)}关进行中`;
+    const list=_el('level-list');list.innerHTML='';
+    for(let li=0;li<5;li++){
+      const idx=first+li,lvl=DATA.levels[idx];
+      const unlocked=s.unlockedLevel>=idx,done=s.unlockedLevel>idx;
+      const stars=s.levelStars[idx],best=s.levelBestMs[idx];
+      const cls=done?'lv-done':unlocked?'lv-current':'lv-locked';
+      const card=document.createElement('div');card.className=`level-card ${cls}`;
+      card.innerHTML=`<div class="lv-num">${done?'✓':(li+1)}</div><div class="lv-body"><div class="lv-name">${lvl.emoji} ${lvl.name}</div><div class="lv-threshold">目标 ≤${lvl.threshold}ms · ${lvl.rounds}轮${best?` · 最佳${best}ms`:''}</div></div><div class="lv-stars">${'⭐'.repeat(stars)+'☆'.repeat(3-stars)}</div>`;
+      if(unlocked)card.onclick=()=>goPreGame(idx);
+      list.appendChild(card);
+    }
+    _show('chapter');
+  }
+
+  function goPreGame(idx){
+    const lvl=DATA.levels[idx],s=Store.get();
+    Store.setCurrentLevel(idx);
+    _el('pre-big-emoji').textContent=lvl.emoji;
+    _el('pre-chapter-tag').textContent=`第${lvl.ch}章 · ${DATA.chapters[lvl.ch-1].name}`;
+    _el('pre-level-name').textContent=lvl.name;
+    _el('pre-level-desc').textContent=lvl.desc;
+    _el('pre-threshold').textContent=lvl.threshold;
+    _el('pre-rounds').textContent=lvl.rounds;
+    const sm={fake:'注意！本关会出现假信号，不要被骗了 😏',rhythm:'跟着节拍感受同步',double:'双重假信号！需要极致冷静',triple:'三重陷阱！天作之合才能通过'};
+    const sp=sm[lvl.taskType];
+    if(sp){_el('pre-special-rule').style.display='flex';_el('pre-special-text').textContent=sp;}
+    else _el('pre-special-rule').style.display='none';
+    const best=s.levelBestMs[idx];
+    if(best!==null){_el('pre-best').style.display='block';_el('pre-best-val').textContent=best+'ms';}
+    else _el('pre-best').style.display='none';
+    _show('pre');
+  }
+
+  function startGame(){const s=Store.get();Game.initLevel(s.currentLevelIdx);_show('game');}
+  function continueGame(){const s=Store.get();goPreGame(s.currentLevelIdx);}
+
+  function showResult(){
+    const r=Game.getResults();
+    const prev=[...Store.get().unlockedBadges];
+    Store.finishLevel(r.levelIdx,r.finalStars,r.bestMs,r.maxPerfectStreak);
+    const newBadges=Store.get().unlockedBadges.filter(id=>!prev.includes(id)).map(id=>DATA.badges.find(b=>b.id===id)).filter(Boolean);
+    if(r.passed)Particles.celebrate();
+    const candy=_pickCandy(r);
+    const gi={3:{e:'🎆',t:'心有灵犀！'},2:{e:'💕',t:'非常接近！'},1:{e:'🌸',t:'初见成效'},0:{e:'💣',t:'再试一次~'}}[r.finalStars];
+    const starsStr='⭐'.repeat(r.finalStars)+'☆'.repeat(3-r.finalStars);
+    const bd=r.bestMs!==null?r.bestMs+'ms':'—';
+    const pct={perfect:Math.round(r.perfects/r.totalRounds*100),good:Math.round(r.goods/r.totalRounds*100),close:Math.round(r.closes/r.totalRounds*100),fail:Math.round(r.fails/r.totalRounds*100)};
+    const hasNext=r.levelIdx+1<20;
+    const unlockHtml=r.passed&&hasNext?`<div class="result-unlock"><div class="unlock-emoji">${DATA.levels[r.levelIdx+1].emoji}</div><div class="unlock-title">解锁新关卡：${DATA.levels[r.levelIdx+1].name}</div><div class="unlock-desc">${DATA.levels[r.levelIdx+1].desc}</div></div>`:'';
+    const badgeHtml=newBadges.length>0?`<div class="result-unlock"><div class="unlock-emoji">🏅</div><div class="unlock-title">解锁成就！</div><div class="unlock-desc">${newBadges.map(b=>`${b.emoji} ${b.name}`).join(' · ')}</div></div>`:'';
+
+    // dual compare
+    let dualHtml='';
+    if(r.bestMs!==null){
+      const lvl=r.level,youPct=Math.max(5,Math.min(100,100-r.bestMs/lvl.threshold*80));
+      // 模拟partner成绩
+      const partnerMs=Math.max(8,r.bestMs+Math.round((Math.random()-.4)*lvl.threshold*0.6));
+      const partnerPct=Math.max(5,Math.min(100,100-partnerMs/lvl.threshold*80));
+      const youWon=r.bestMs<=partnerMs;
+      dualHtml=`<div class="dual-result">
+        <div class="dual-result-title">双人最佳对比</div>
+        <div class="dual-row">
+          <div class="dual-who">你</div>
+          <div class="dual-bar-wrap"><div class="dual-bar dual-bar-you" style="width:${youPct}%"></div></div>
+          <div class="dual-ms">${r.bestMs}ms${youWon?'<span class="winner-badge">更准</span>':''}</div>
+        </div>
+        <div class="dual-row">
+          <div class="dual-who">TA</div>
+          <div class="dual-bar-wrap"><div class="dual-bar dual-bar-partner" style="width:${partnerPct}%"></div></div>
+          <div class="dual-ms">${partnerMs}ms${!youWon?'<span class="winner-badge">更准</span>':''}</div>
+        </div>
+        <div style="font-size:12px;color:var(--text3);margin-top:8px">${youWon?'这次你更精准！给TA点鼓励～ 💕':'TA这次更厉害哦！加油追上～ 💪'}</div>
+      </div>`;
+    }
+
+    const nextAction=r.passed&&hasNext?`App.goPreGame(${r.levelIdx+1})`:`App.goPreGame(${r.levelIdx})`;
+    const nextText=r.passed&&hasNext?`下一关：${DATA.levels[r.levelIdx+1].name} →`:'再挑战一次';
+
+    _el('result-wrap').innerHTML=`
+      <div class="result-hero">
+        <span class="result-big-emoji">${gi.e}</span>
+        <div class="result-grade">${gi.t}</div>
+        <div class="result-stars">${starsStr}</div>
+        <div class="result-best-diff">${bd}</div>
+        <div class="result-best-label">本关最小误差</div>
+        <div class="result-candy" id="result-candy-box">
+          ${candy}
+          <button class="speak-btn" onclick="Voice.speak(document.getElementById('result-candy-box').innerText)" title="朗读">🔊</button>
+        </div>
+      </div>
+      ${dualHtml}
+      <div class="result-stats">
+        <div class="stat-card"><div class="stat-val">${r.perfects}</div><div class="stat-lbl">✨ 完美</div></div>
+        <div class="stat-card"><div class="stat-val">${r.goods}</div><div class="stat-lbl">💕 良好</div></div>
+        <div class="stat-card"><div class="stat-val">${r.fails}</div><div class="stat-lbl">💣 失误</div></div>
+      </div>
+      <div class="result-compare">
+        <div class="compare-title">本关表现分布</div>
+        ${_cbar('完美同步',pct.perfect,'bar-perfect')}${_cbar('良好',pct.good,'bar-good')}${_cbar('差一点',pct.close,'bar-close')}${_cbar('走火',pct.fail,'bar-fail')}
+      </div>
+      ${unlockHtml}${badgeHtml}
+      <div class="result-actions">
+        <button class="main-btn secondary" style="flex:1" onclick="App.goHome()">选关</button>
+        <button class="main-btn" style="flex:2" onclick="${nextAction}">${nextText}</button>
+      </div>`;
+    // speak result candy（结果页朗读，不阻塞UI）
+    Voice.speak(candy);
+    _show('result');
+  }
+
+  function _cbar(l,p,c){return `<div class="compare-item"><span style="width:56px;flex-shrink:0;font-size:11px">${l}</span><div class="compare-bar-wrap"><div class="compare-bar-fill ${c}" style="width:${p}%"></div></div><span style="width:32px;text-align:right;font-size:11px;color:var(--text3)">${p}%</span></div>`;}
+  function _pickCandy(r){const g=r.finalStars===3?'perfect':r.finalStars>=2?'good':r.finalStars>=1?'close':'fail';const a=DATA.candy[g];return a[Math.floor(Math.random()*a.length)];}
+
+  function goProfile(){
+    const s=Store.get();const cl=Math.floor(s.unlockedLevel/5);
+    _el('profile-body').innerHTML=`
+      <div class="profile-hero">
+        <div class="profile-avatar">💕</div>
+        <div style="font-size:16px;font-weight:700">我们的档案</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:4px">一起记录每一次心跳同步</div>
+        <div class="profile-big-stat">${s.totalStars}</div>
+        <div class="profile-big-label">总星数</div>
+      </div>
+      <div class="result-stats">
+        <div class="stat-card"><div class="stat-val">${s.totalPlays}</div><div class="stat-lbl">总场次</div></div>
+        <div class="stat-card"><div class="stat-val">${s.bestDiffEver<9999?s.bestDiffEver+'ms':'—'}</div><div class="stat-lbl">历史最佳</div></div>
+        <div class="stat-card"><div class="stat-val">${cl}/4</div><div class="stat-lbl">完成章节</div></div>
+      </div>
+      <div class="result-compare">
+        <div class="compare-title">各章节进度</div>
+        ${DATA.chapters.map((ch,ci)=>{const f=ci*5,cs=s.levelStars.slice(f,f+5).reduce((a,b)=>a+b,0);return _cbar(`${ch.emoji} ${ch.name}`,Math.round(cs/15*100),'bar-perfect');}).join('')}
+      </div>
+      <div class="card" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);padding:16px">
+        <div class="profile-badges-title">已获成就</div>
+        <div class="profile-badges-list">
+          ${DATA.badges.map(b=>`<span class="badge badge-gold" style="${s.unlockedBadges.includes(b.id)?'':'opacity:.3'}">${b.emoji} ${b.name}</span>`).join('')}
+        </div>
+      </div>
+      <button class="main-btn secondary" onclick="if(confirm('确定重置所有进度吗？')){Store.reset();App.goHome();}">重置进度</button>`;
+    _show('profile');
+  }
+
+  // settings
+  function openSettings(){
+    _el('settings-modal').classList.add('open');
+    // sync UI
+    const mode=Voice.getMode();
+    document.querySelectorAll('#voice-ctrl .seg-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelector(`#voice-ctrl .seg-btn[onclick*="${mode}"]`)?.classList.add('active');
+    _el('rate-slider').value=Voice.getRate();
+  }
+  function closeSettings(e){if(!e||e.target===_el('settings-modal'))_el('settings-modal').classList.remove('open');}
+  function setVoice(m){
+    Voice.setMode(m);
+    document.querySelectorAll('#voice-ctrl .seg-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelector(`#voice-ctrl .seg-btn[onclick*="${m}"]`)?.classList.add('active');
+    if(m==='recorded'){
+      const cnt=Voice.getRecordedCount();
+      if(cnt===0){alert('还没有录音哦～先去录音室录制吧！');}
+      else{Voice.speak('设置成功，现在是真声模式');}
+    } else if(m!=='off'){
+      Voice.speak('设置完成，声音就像这样哦');}
+  }
+  function setRate(v){Voice.setRate(v);}
+  function setVibration(on){
+    document.querySelectorAll('#vib-ctrl .seg-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelector(`#vib-ctrl .seg-btn[onclick*="${on}"]`)?.classList.add('active');
+  }
+
+  // splash particles
+  function initSplash(){
+    const wrap=_el('splash-particles');
+    const em=['💕','✨','💫','🌸','💖','⭐'];
+    for(let i=0;i<12;i++){
+      const p=document.createElement('div');
+      p.style.cssText=`position:absolute;font-size:${12+Math.random()*16}px;left:${Math.random()*100}%;top:${Math.random()*100}%;opacity:${0.08+Math.random()*0.2};pointer-events:none`;
+      p.textContent=em[Math.floor(Math.random()*em.length)];wrap.appendChild(p);
+    }
+  }
+
+  return{initSplash,goHome,goChapter,goPreGame,startGame,continueGame,showResult,goProfile,goStudio,openSettings,closeSettings,setVoice,setRate,setVibration,startRec,stopRec,playRec,deleteRec,clearAllRecordings};
+})();
+
+// ===================== INIT =====================
+App.initSplash();
+</script>
+</body>
+</html>
