@@ -1579,17 +1579,9 @@ const Multi = (() => {
 
     // 双方都确认，直接开始下一关（不回大厅）
     _socket.on('game_restart', ({ levelIdx })=>{
-      const idx = levelIdx !== undefined ? levelIdx : Multi.getLevelIdx();
-      Store.setCurrentLevel(idx);
-      // 直接初始化新关卡，保持联机状态
-      Multi.setOnRoundResult((result)=>{
-        Game._onMultiRoundResult(result);
-      });
-      Multi.sendPlayerReady();
-      Game.initLevel(idx, true);
-      _show('game');
-      // 确保联机状态标识还在
-      _multiMode = true;
+      const idx = levelIdx !== undefined ? levelIdx : _levelIdx;
+      // 调用App方法确保状态正确
+      App.startMultiFromRoom(idx);
     });
   }
 
@@ -1822,6 +1814,18 @@ const App=(()=>{
     `;
     wrap.appendChild(div);
   }
+
+  function startMultiFromRoom(idx){
+    _multiMode = true;
+    Store.setCurrentLevel(idx);
+    Multi.setOnRoundResult((result)=>{ Game._onMultiRoundResult(result); });
+    Multi.sendPlayerReady();
+    Game.initLevel(idx, true);
+    _show('game');
+  }
+
+  function isMultiMode(){ return _multiMode; }
+  function exitMultiMode(){ _multiMode = false; }
 
   function exitMultiAndGoHome(){
     exitMultiMode();
@@ -2116,7 +2120,7 @@ const App=(()=>{
     const taTotal=r.roundDetails.filter(rd=>rd.diff!==null&&rd.partnerDiff!==null&&rd.partnerDiff<rd.diff).length;
     const winnerText=youTotal>taTotal?'🏆 你赢了！这次你更精准':taTotal>youTotal?'TA赢了～下次加油追上':'🤝 平局！默契十足';
 
-    const isMulti = App.isMultiMode();
+    const isMulti = _multiMode;
     const nextAction = isMulti
       ? (r.passed && hasNext ? `App.multiNextLevel(${r.levelIdx+1})` : `App.multiRetry(${r.levelIdx})`)
       : (r.passed && hasNext ? `App.goPreGame(${r.levelIdx+1})` : `App.goPreGame(${r.levelIdx})`);
@@ -2335,7 +2339,7 @@ const App=(()=>{
     }
   }
 
-  return{initSplash,goHome,goChapter,goPreGame,startGame,continueGame,showResult,showShareCard,goProfile,goStudio,goLobby,createRoom,joinRoom,startMultiGame,copyRoomCode,openSettings,closeSettings,setVoice,setVibration,startRec,stopRec,playRec,deleteRec,clearAllRecordings,toggleEdit,closeEdit,saveCustomText,resetCustomText,_getDisplayText,uploadVoice,downloadVoice,isMultiMode,exitMultiMode,multiNextLevel,multiRetry,exitMultiAndGoHome};
+  return{initSplash,goHome,goChapter,goPreGame,startGame,continueGame,showResult,showShareCard,goProfile,goStudio,goLobby,createRoom,joinRoom,startMultiGame,startMultiFromRoom,copyRoomCode,openSettings,closeSettings,setVoice,setVibration,startRec,stopRec,playRec,deleteRec,clearAllRecordings,toggleEdit,closeEdit,saveCustomText,resetCustomText,_getDisplayText,uploadVoice,downloadVoice,isMultiMode,exitMultiMode,multiNextLevel,multiRetry,exitMultiAndGoHome};
 })();
 
 // ===================== SHARE CARD 战报分享 =====================
