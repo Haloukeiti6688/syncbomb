@@ -1568,12 +1568,28 @@ const Multi = (() => {
       alert(`${nickname || '对方'}断线了，游戏暂停`);
     });
 
-    // 再来一局
-    _socket.on('partner_wants_again', ()=>{
-      _el('lobby-sub').textContent = 'TA想再来一局！';
+    // 对方想继续（下一关或重试）
+    _socket.on('partner_wants_again', ({ levelIdx })=>{
+      // 对方已确认，更新等待提示
+      const tip = document.getElementById('multi-waiting-tip');
+      if(tip){
+        tip.innerHTML = `<div style="font-size:13px;color:var(--green)">✓ 搭档已确认，即将开始…</div>`;
+      }
     });
-    _socket.on('game_restart', ()=>{
-      App.goLobby();
+
+    // 双方都确认，直接开始下一关（不回大厅）
+    _socket.on('game_restart', ({ levelIdx })=>{
+      const idx = levelIdx !== undefined ? levelIdx : Multi.getLevelIdx();
+      Store.setCurrentLevel(idx);
+      // 直接初始化新关卡，保持联机状态
+      Multi.setOnRoundResult((result)=>{
+        Game._onMultiRoundResult(result);
+      });
+      Multi.sendPlayerReady();
+      Game.initLevel(idx, true);
+      _show('game');
+      // 确保联机状态标识还在
+      _multiMode = true;
     });
   }
 
@@ -1641,7 +1657,12 @@ const Multi = (() => {
   }
 
   function sendPlayAgain(){
-    if(_socket) _socket.emit('play_again', { code: _roomCode });
+    if(_socket) _socket.emit('play_again', { code: _roomCode, levelIdx: _levelIdx });
+  }
+
+  function sendNextLevel(levelIdx){
+    _levelIdx = levelIdx;
+    if(_socket) _socket.emit('play_again', { code: _roomCode, levelIdx });
   }
 
   function setOnRoundResult(cb){ _onRoundResult = cb; }
@@ -1654,7 +1675,7 @@ const Multi = (() => {
 
   return {
     connect, createRoom, joinRoom,
-    sendPress, sendRelease, sendReleaseCmd, sendFakeSignal, sendPlayerReady, sendPlayAgain,
+    sendPress, sendRelease, sendReleaseCmd, sendFakeSignal, sendPlayerReady, sendPlayAgain, sendNextLevel,
     setOnRoundResult, getRoomCode, getIsHost, getMySocketId, getLevelIdx, getPartnerNickname, isConnected
   };
 })();
@@ -1769,8 +1790,43 @@ const App=(()=>{
     }
   }
 
-  function isMultiMode(){ return _multiMode; }
-  function exitMultiMode(){ _multiMode = false; }
+  // ── 联机模式：在房间内进入下一关 ──
+  function multiNextLevel(levelIdx){
+    // 通知服务器切换关卡
+    Multi.sendNextLevel(levelIdx);
+    // 显示等待搭档确认的UI
+    _showMultiWaiting('等待搭档确认下一关…', levelIdx);
+  }
+
+  function multiRetry(levelIdx){
+    Multi.sendNextLevel(levelIdx);
+    _showMultiWaiting('等待搭档再来一局…', levelIdx);
+  }
+
+  function _showMultiWaiting(msg, levelIdx){
+    const wrap = _el('result-wrap');
+    // 在结果页底部加等待提示
+    const existing = document.getElementById('multi-waiting-tip');
+    if(existing) existing.remove();
+    const div = document.createElement('div');
+    div.id = 'multi-waiting-tip';
+    div.style.cssText = 'text-align:center;padding:14px;background:var(--surface);border-radius:var(--r);margin-top:10px';
+    div.innerHTML = `
+      <div style="font-size:13px;color:var(--text2);margin-bottom:8px">${msg}</div>
+      <div style="display:flex;gap:8px;justify-content:center">
+        <div style="width:8px;height:8px;border-radius:50%;background:var(--pink);animation:blinkdot 1s ease infinite"></div>
+        <div style="width:8px;height:8px;border-radius:50%;background:var(--pink);animation:blinkdot 1s ease .2s infinite"></div>
+        <div style="width:8px;height:8px;border-radius:50%;background:var(--pink);animation:blinkdot 1s ease .4s infinite"></div>
+      </div>
+      <button class="main-btn secondary" style="margin-top:12px;max-width:200px" onclick="App.exitMultiAndGoHome()">退出房间</button>
+    `;
+    wrap.appendChild(div);
+  }
+
+  function exitMultiAndGoHome(){
+    exitMultiMode();
+    goHome();
+  }
   let _recorder=null,_recChunks=[],_recTargetIdx=-1,_recStream=null;
 
   // 所有需要录制的文案（从DATA.candy里提取纯文本）
@@ -2060,8 +2116,13 @@ const App=(()=>{
     const taTotal=r.roundDetails.filter(rd=>rd.diff!==null&&rd.partnerDiff!==null&&rd.partnerDiff<rd.diff).length;
     const winnerText=youTotal>taTotal?'🏆 你赢了！这次你更精准':taTotal>youTotal?'TA赢了～下次加油追上':'🤝 平局！默契十足';
 
-    const nextAction=r.passed&&hasNext?`App.goPreGame(${r.levelIdx+1})`:`App.goPreGame(${r.levelIdx})`;
-    const nextText=r.passed&&hasNext?`下一关：${DATA.levels[r.levelIdx+1].name} →`:'再挑战一次';
+    const isMulti = App.isMultiMode();
+    const nextAction = isMulti
+      ? (r.passed && hasNext ? `App.multiNextLevel(${r.levelIdx+1})` : `App.multiRetry(${r.levelIdx})`)
+      : (r.passed && hasNext ? `App.goPreGame(${r.levelIdx+1})` : `App.goPreGame(${r.levelIdx})`);
+    const nextText = r.passed && hasNext
+      ? `下一关：${DATA.levels[r.levelIdx+1].name} →`
+      : '再挑战一次';
 
     _el('result-wrap').innerHTML=`
       <div class="result-hero">
@@ -2274,7 +2335,7 @@ const App=(()=>{
     }
   }
 
-  return{initSplash,goHome,goChapter,goPreGame,startGame,continueGame,showResult,showShareCard,goProfile,goStudio,goLobby,createRoom,joinRoom,startMultiGame,copyRoomCode,openSettings,closeSettings,setVoice,setVibration,startRec,stopRec,playRec,deleteRec,clearAllRecordings,toggleEdit,closeEdit,saveCustomText,resetCustomText,_getDisplayText,uploadVoice,downloadVoice,isMultiMode,exitMultiMode};
+  return{initSplash,goHome,goChapter,goPreGame,startGame,continueGame,showResult,showShareCard,goProfile,goStudio,goLobby,createRoom,joinRoom,startMultiGame,copyRoomCode,openSettings,closeSettings,setVoice,setVibration,startRec,stopRec,playRec,deleteRec,clearAllRecordings,toggleEdit,closeEdit,saveCustomText,resetCustomText,_getDisplayText,uploadVoice,downloadVoice,isMultiMode,exitMultiMode,multiNextLevel,multiRetry,exitMultiAndGoHome};
 })();
 
 // ===================== SHARE CARD 战报分享 =====================
