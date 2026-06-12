@@ -714,8 +714,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
       <div style="font-size:12px;color:var(--text3);line-height:1.65">
         💡 在<strong style="color:var(--text2)">录音室</strong>录制好声音后，开启真声模式，游戏里就会播放你录的声音
       </div>
-    </div>
-    <div class="setting-row">
+    </div>    <div class="setting-row">
       <div class="setting-label">震动反馈<small>假信号震动提示</small></div>
       <div class="seg-ctrl" id="vib-ctrl">
         <button class="seg-btn active" onclick="App.setVibration(true)">开启</button>
@@ -774,7 +773,17 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 <div class="screen-flash" id="screen-flash"></div>
 <div class="particles-layer" id="particles-layer"></div>
 
-<script src="http://101.35.214.253:3001/socket.io/socket.io.js"></script>
+<script>
+// 动态加载socket.io，失败时降级
+window._socketIOReady = false;
+(function loadSocketIO(){
+  const s = document.createElement('script');
+  s.src = 'http://101.35.214.253:3001/socket.io/socket.io.js';
+  s.onload = () => { window._socketIOReady = true; };
+  s.onerror = () => { console.warn('socket.io加载失败，联机功能不可用'); window._socketIOReady = false; };
+  document.head.appendChild(s);
+})();
+</script>
 <script>
 // ===================== DATA =====================
 const DATA = {
@@ -1417,6 +1426,20 @@ const Multi = (() => {
 
   function connect(){
     if(_socket && _socket.connected) return;
+    if(!window._socketIOReady || typeof io === 'undefined'){
+      setTimeout(()=>{
+        if(typeof io === 'undefined'){
+          alert('联机服务连接失败，请检查网络后重试');
+          return;
+        }
+        _doConnect();
+      }, 1500);
+      return;
+    }
+    _doConnect();
+  }
+
+  function _doConnect(){
     _socket = io(SERVER, { transports:['websocket','polling'] });
 
     _socket.on('connect', ()=>{
@@ -2059,36 +2082,40 @@ const App=(()=>{
     _show('profile');
   }
 
+
   // settings
+  function _syncVoiceBtns(mode){
+    document.querySelectorAll('#voice-ctrl .seg-btn').forEach(b=>{
+      b.classList.toggle('active', b.dataset.voice===mode);
+    });
+  }
+
   function openSettings(){
     _el('settings-modal').classList.add('open');
-    // sync UI
-    const mode=Voice.getMode();
-    document.querySelectorAll('#voice-ctrl .seg-btn').forEach(b=>b.classList.remove('active'));
-    document.querySelector(`#voice-ctrl .seg-btn[onclick*="${mode}"]`)?.classList.add('active');
+    _syncVoiceBtns(Voice.getMode());
   }
+
   function closeSettings(e){if(!e||e.target===_el('settings-modal'))_el('settings-modal').classList.remove('open');}
+
   function setVoice(m){
     Voice.setMode(m);
-    document.querySelectorAll('#voice-ctrl .seg-btn').forEach(b=>{
-      b.classList.toggle('active', b.dataset.voice===m);
-    });
+    _syncVoiceBtns(m);
+    const tipRow = _el('voice-tip-row');
     if(m==='recorded'){
       const cnt=Voice.getRecordedCount();
       if(cnt===0){
-        // 没有录音，提示去录音室
-        alert('还没有录音哦～点击下方「录音室」录制你的声音吧！');
-        // 自动切回关闭
-        Voice.setMode('off');
-        document.querySelectorAll('#voice-ctrl .seg-btn').forEach(b=>{
-          b.classList.toggle('active', b.dataset.voice==='off');
-        });
+        // 有录音：不切回，保持选中，提示去录音室
+        if(tipRow) tipRow.innerHTML='<div style="font-size:12px;color:var(--red);line-height:1.65">⚠️ 还没有录音，请先去 <strong style="color:var(--pink)">录音室</strong> 录制声音，再开启真声模式</div>';
+        // 不强制切回，让用户保持选中状态
       } else {
+        if(tipRow) tipRow.innerHTML='<div style="font-size:12px;color:var(--green);line-height:1.65">✓ 已有 '+cnt+' 条录音，游戏中将播放你的真实声音 🎙️</div>';
         // 试播一条
         const texts=_allCandyTexts();
         const hasRec=texts.find(t=>Voice.hasRecording(t));
         if(hasRec) Voice.playRecording(hasRec);
       }
+    } else {
+      if(tipRow) tipRow.innerHTML='<div style="font-size:12px;color:var(--text3);line-height:1.65">💡 在<strong style="color:var(--text2)">录音室</strong>录制好声音后，开启真声模式，游戏里就会播放你录的声音</div>';
     }
   }
   function setVibration(on){
