@@ -70,6 +70,29 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .studio-tip{background:var(--surface);border-radius:var(--r);padding:12px 14px;font-size:12px;color:var(--text3);line-height:1.7}
 .studio-tip strong{color:var(--text2)}
 
+/* ── ROUND TABLE ── */
+.round-table-header{display:flex;align-items:center;gap:6px;margin-bottom:6px;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;padding:0 2px}
+.round-row{display:flex;align-items:center;gap:6px;padding:8px 6px;border-radius:var(--rsm);margin-bottom:4px;background:var(--surface2)}
+.rr-num{width:18px;font-size:11px;color:var(--text3);text-align:center;flex-shrink:0}
+.rr-grade{width:20px;font-size:14px;text-align:center;flex-shrink:0}
+.rr-you{flex:1;text-align:center;font-size:14px;font-weight:600;color:var(--text2);padding:4px 6px;border-radius:6px;background:rgba(255,110,180,.08)}
+.rr-ta{flex:1;text-align:center;font-size:14px;font-weight:600;color:var(--text2);padding:4px 6px;border-radius:6px;background:rgba(167,139,250,.08)}
+.rr-vs{width:20px;text-align:center;font-size:10px;color:var(--text3);flex-shrink:0}
+.rr-winner{color:#fff!important;font-weight:700!important}
+.rr-you.rr-winner{background:var(--pink)!important}
+.rr-ta.rr-winner{background:var(--purple)!important}
+.round-winner{margin-top:10px;padding:10px;background:rgba(255,209,102,.08);border-radius:var(--rsm);font-size:13px;font-weight:500;color:var(--gold);text-align:center}
+
+/* ── REC EDIT ── */
+.rec-edit-wrap{margin-top:6px;display:none}
+.rec-edit-wrap.open{display:block}
+.rec-edit-area{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--rsm);padding:8px 10px;font-size:13px;color:var(--text);font-family:var(--font);resize:none;min-height:48px;line-height:1.5}
+.rec-edit-area:focus{outline:none;border-color:var(--pink)}
+.rec-edit-footer{display:flex;gap:6px;margin-top:5px}
+.rec-edit-btn{padding:5px 12px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border2)}
+.rec-edit-save{background:var(--pink);color:#fff;border-color:var(--pink)}
+.rec-edit-cancel{background:var(--surface2);color:var(--text2)}
+
 /* ── SETTINGS MODAL ── */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
 .modal-overlay.open{opacity:1;pointer-events:all}
@@ -240,7 +263,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 /* ── RESULT ── */
 .result-wrap{flex:1;overflow-y:auto;padding:52px 20px 32px;display:flex;flex-direction:column;gap:12px}
 .result-wrap::-webkit-scrollbar{display:none}
-.result-hero{background:var(--surface);border-radius:var(--rlg);padding:24px 20px;text-align:center;border:1px solid var(--border);position:relative;overflow:hidden}
+.result-hero{background:var(--surface);border-radius:var(--rlg);padding:28px 20px 20px;text-align:center;border:1px solid var(--border);position:relative;overflow:visible}
 .result-hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(255,110,180,.12) 0%,transparent 60%)}
 .result-big-emoji{font-size:52px;margin-bottom:8px;display:block;animation:popin .4s ease}
 .result-grade{font-size:21px;font-weight:800;margin-bottom:5px}
@@ -488,10 +511,10 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
     <div class="setting-row">
       <div class="setting-label">语音朗读<small>结果文案自动播报</small></div>
       <div class="seg-ctrl" id="voice-ctrl">
-        <button class="seg-btn active" onclick="App.setVoice('female')">女声</button>
-        <button class="seg-btn" onclick="App.setVoice('male')">男声</button>
-        <button class="seg-btn" onclick="App.setVoice('recorded')">真声🎙️</button>
-        <button class="seg-btn" onclick="App.setVoice('off')">关闭</button>
+        <button class="seg-btn active" data-voice="female" onclick="App.setVoice('female')">女声</button>
+        <button class="seg-btn" data-voice="male" onclick="App.setVoice('male')">男声</button>
+        <button class="seg-btn" data-voice="recorded" onclick="App.setVoice('recorded')">真声🎙️</button>
+        <button class="seg-btn" data-voice="off" onclick="App.setVoice('off')">关闭</button>
       </div>
     </div>
     <div class="setting-row">
@@ -735,7 +758,12 @@ const Voice=(()=>{
   }
 
   function saveRecording(rawText,base64Audio){
-    _recordings[_hashText(rawText)]=base64Audio;
+    const key=_hashText(rawText);
+    if(base64Audio===null){
+      delete _recordings[key];
+    } else {
+      _recordings[key]=base64Audio;
+    }
     _persist();
   }
 
@@ -1097,7 +1125,14 @@ const Game=(()=>{
     const tot=r.reduce((a,b)=>a+b.stars,0);
     const pct=tot/(_level.rounds*3);
     const finalStars=pct>=0.85?3:pct>=0.55?2:pct>=0.25?1:0;
-    return{levelIdx:_lvIdx,level:_level,passed:finalStars>=1,finalStars,bestMs:_bestDiff<Infinity?_bestDiff:null,perfects:ps,goods:gs,closes:cs,fails:fs,maxPerfectStreak:_maxPerfStreak,totalRounds:_level.rounds};
+    // 每轮partner数据（AI模拟，基于aiOffset）
+    const roundDetails=r.map((rd,i)=>{
+      const pDiff=rd.diff!==null?Math.max(8,rd.diff+Math.round((Math.random()-.4)*_level.threshold*0.5)):null;
+      return {...rd,partnerDiff:pDiff};
+    });
+    return{levelIdx:_lvIdx,level:_level,passed:finalStars>=1,finalStars,
+      bestMs:_bestDiff<Infinity?_bestDiff:null,perfects:ps,goods:gs,closes:cs,fails:fs,
+      maxPerfectStreak:_maxPerfStreak,totalRounds:_level.rounds,roundDetails};
   }
 
   function _clearTimers(){clearTimeout(_waitTimer);_fakeTimers.forEach(t=>clearTimeout(t));_fakeTimers=[];}
@@ -1150,40 +1185,88 @@ const App=(()=>{
     return all;
   }
 
-  function goStudio(){
-    _buildStudio();
-    _show('studio');
+  // 自定义文案存储（key=原文案hash，value=自定义文本）
+  let _customTexts={};
+  function _loadCustomTexts(){try{const r=localStorage.getItem('syncbomb_custom_texts');if(r)_customTexts=JSON.parse(r);}catch(e){}}
+  function _saveCustomTexts(){try{localStorage.setItem('syncbomb_custom_texts',JSON.stringify(_customTexts));}catch(e){}}
+  function _getDisplayText(orig){
+    // hash用原文来查，但如果用户改过就显示自定义文案
+    const k='ct_'+orig.slice(0,20).replace(/\s/g,'');
+    return _customTexts[k]||orig;
   }
+  function _setCustomText(orig,custom){
+    const k='ct_'+orig.slice(0,20).replace(/\s/g,'');
+    if(custom.trim()===''||custom.trim()===orig){delete _customTexts[k];}
+    else{_customTexts[k]=custom.trim();}
+    _saveCustomTexts();
+  }
+  _loadCustomTexts();
+
+  function goStudio(){_buildStudio();_show('studio');}
 
   function _buildStudio(){
-    const texts=_allCandyTexts();
-    const total=texts.length;
-    const done=texts.filter(t=>Voice.hasRecording(t)).length;
+    const origTexts=_allCandyTexts();
+    const total=origTexts.length;
+    // 录音用显示文案（可能是自定义的），但hash仍用原文
+    const done=origTexts.filter(t=>Voice.hasRecording(t)).length;
     _el('studio-rec-count').textContent=`${done} / ${total}`;
     const list=_el('rec-list');
     list.innerHTML='';
-    texts.forEach((text,i)=>{
-      const has=Voice.hasRecording(text);
+    origTexts.forEach((origText,i)=>{
+      const displayText=_getDisplayText(origText);
+      const isCustom=displayText!==origText;
+      const has=Voice.hasRecording(origText);
       const item=document.createElement('div');
       item.className=`rec-item${has?' has-rec':''}`;
       item.id=`rec-item-${i}`;
+      // 安全转义用于html属性
+      const safeOrig=origText.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;');
+      const safeDisplay=displayText.replace(/</g,'&lt;');
       item.innerHTML=`
-        <div style="flex:1">
-          <div class="rec-text">${text}</div>
+        <div style="flex:1;min-width:0">
+          <div class="rec-text">${safeDisplay}${isCustom?'<span style="font-size:10px;color:var(--purple);margin-left:4px">已自定义</span>':''}</div>
           <div class="rec-status${has?' done':''}" id="rec-status-${i}">${has?'✓ 已录制':'未录制'}</div>
+          <div class="rec-edit-wrap" id="rec-edit-${i}">
+            <textarea class="rec-edit-area" id="rec-textarea-${i}" rows="2">${displayText}</textarea>
+            <div class="rec-edit-footer">
+              <button class="rec-edit-btn rec-edit-save" onclick="App.saveCustomText('${safeOrig}',${i})">保存</button>
+              <button class="rec-edit-btn rec-edit-cancel" onclick="App.closeEdit(${i})">取消</button>
+              ${isCustom?`<button class="rec-edit-btn" style="background:var(--surface);color:var(--text3)" onclick="App.resetCustomText('${safeOrig}',${i})">恢复默认</button>`:''}
+            </div>
+          </div>
         </div>
-        <div class="rec-actions">
-          ${has?`<button class="rec-btn rec-play" onclick="App.playRec('${text.replace(/'/g,"\\'")}',${i})" title="试听">▶</button>`:''}
+        <div class="rec-actions" style="align-self:flex-start;margin-top:2px">
+          <button class="rec-btn" onclick="App.toggleEdit(${i})" title="编辑文案" style="font-size:14px">✏️</button>
+          ${has?`<button class="rec-btn rec-play" onclick="App.playRec('${safeOrig}',${i})" title="试听">▶</button>`:''}
           <button class="rec-btn rec-record" id="rec-btn-${i}"
-            onmousedown="App.startRec('${text.replace(/'/g,"\\'")}',${i},event)"
+            onmousedown="App.startRec('${safeOrig}',${i},event)"
             onmouseup="App.stopRec(event)"
-            ontouchstart="App.startRec('${text.replace(/'/g,"\\'")}',${i},event)"
+            ontouchstart="App.startRec('${safeOrig}',${i},event)"
             ontouchend="App.stopRec(event)"
             title="按住录音">🔴</button>
-          ${has?`<button class="rec-btn rec-delete" onclick="App.deleteRec('${text.replace(/'/g,"\\'")}',${i})" title="删除">✕</button>`:''}
+          ${has?`<button class="rec-btn rec-delete" onclick="App.deleteRec('${safeOrig}',${i})" title="删除此条">✕</button>`:''}
         </div>`;
       list.appendChild(item);
     });
+  }
+
+  function toggleEdit(idx){
+    const wrap=document.getElementById(`rec-edit-${idx}`);
+    if(wrap)wrap.classList.toggle('open');
+  }
+  function closeEdit(idx){
+    const wrap=document.getElementById(`rec-edit-${idx}`);
+    if(wrap)wrap.classList.remove('open');
+  }
+  function saveCustomText(origText,idx){
+    const ta=document.getElementById(`rec-textarea-${idx}`);
+    if(!ta)return;
+    _setCustomText(origText,ta.value);
+    _buildStudio();
+  }
+  function resetCustomText(origText,idx){
+    _setCustomText(origText,'');
+    _buildStudio();
   }
 
   async function startRec(text,idx,e){
@@ -1224,18 +1307,14 @@ const App=(()=>{
     reader.readAsDataURL(blob);
   }
 
-  function playRec(text,idx){
-    // 先取消TTS
+  function playRec(origText,idx){
     Voice.cancel();
-    Voice.speak(text); // 如果有录音会播录音
+    const displayText=_getDisplayText(origText);
+    Voice.speak(displayText);
   }
 
   function deleteRec(text,idx){
-    // 直接用speak模块的hash删除
-    Voice.saveRecording(text,null); // 存null等于删除
-    // 重新加载
-    Voice.clearRecordings(); // 只删这一条
-    // TODO: 单条删除，这里简化为重建
+    Voice.saveRecording(text,null); // 单条删除
     _buildStudio();
   }
 
@@ -1323,7 +1402,7 @@ const App=(()=>{
     const newBadges=Store.get().unlockedBadges.filter(id=>!prev.includes(id)).map(id=>DATA.badges.find(b=>b.id===id)).filter(Boolean);
     if(r.passed)Particles.celebrate();
     const candy=_pickCandy(r);
-    const gi={3:{e:'🎆',t:'心有灵犀！'},2:{e:'💕',t:'非常接近！'},1:{e:'🌸',t:'初见成效'},0:{e:'💣',t:'再试一次~'}}[r.finalStars];
+    const gi={3:{e:'🎆',t:'心有灵犀！'},2:{e:'💕',t:'非常接近！'},1:{e:'🌸',t:'初见成效~'},0:{e:'💣',t:'再试一次~'}}[r.finalStars];
     const starsStr='⭐'.repeat(r.finalStars)+'☆'.repeat(3-r.finalStars);
     const bd=r.bestMs!==null?r.bestMs+'ms':'—';
     const pct={perfect:Math.round(r.perfects/r.totalRounds*100),good:Math.round(r.goods/r.totalRounds*100),close:Math.round(r.closes/r.totalRounds*100),fail:Math.round(r.fails/r.totalRounds*100)};
@@ -1331,29 +1410,27 @@ const App=(()=>{
     const unlockHtml=r.passed&&hasNext?`<div class="result-unlock"><div class="unlock-emoji">${DATA.levels[r.levelIdx+1].emoji}</div><div class="unlock-title">解锁新关卡：${DATA.levels[r.levelIdx+1].name}</div><div class="unlock-desc">${DATA.levels[r.levelIdx+1].desc}</div></div>`:'';
     const badgeHtml=newBadges.length>0?`<div class="result-unlock"><div class="unlock-emoji">🏅</div><div class="unlock-title">解锁成就！</div><div class="unlock-desc">${newBadges.map(b=>`${b.emoji} ${b.name}`).join(' · ')}</div></div>`:'';
 
-    // dual compare
-    let dualHtml='';
-    if(r.bestMs!==null){
-      const lvl=r.level,youPct=Math.max(5,Math.min(100,100-r.bestMs/lvl.threshold*80));
-      // 模拟partner成绩
-      const partnerMs=Math.max(8,r.bestMs+Math.round((Math.random()-.4)*lvl.threshold*0.6));
-      const partnerPct=Math.max(5,Math.min(100,100-partnerMs/lvl.threshold*80));
-      const youWon=r.bestMs<=partnerMs;
-      dualHtml=`<div class="dual-result">
-        <div class="dual-result-title">双人最佳对比</div>
-        <div class="dual-row">
-          <div class="dual-who">你</div>
-          <div class="dual-bar-wrap"><div class="dual-bar dual-bar-you" style="width:${youPct}%"></div></div>
-          <div class="dual-ms">${r.bestMs}ms${youWon?'<span class="winner-badge">更准</span>':''}</div>
-        </div>
-        <div class="dual-row">
-          <div class="dual-who">TA</div>
-          <div class="dual-bar-wrap"><div class="dual-bar dual-bar-partner" style="width:${partnerPct}%"></div></div>
-          <div class="dual-ms">${partnerMs}ms${!youWon?'<span class="winner-badge">更准</span>':''}</div>
-        </div>
-        <div style="font-size:12px;color:var(--text3);margin-top:8px">${youWon?'这次你更精准！给TA点鼓励～ 💕':'TA这次更厉害哦！加油追上～ 💪'}</div>
+    // ── 每轮详细对比表 ──
+    const gradeIcon={perfect:'✨',good:'💕',close:'🌸',fail:'💣'};
+    const gradeLabel={perfect:'完美',good:'良好',close:'差一点',fail:'走火'};
+    const roundRows=r.roundDetails.map((rd,i)=>{
+      const youMs=rd.diff!==null?rd.diff+'ms':'失误';
+      const taMs=rd.partnerDiff!==null?rd.partnerDiff+'ms':'—';
+      const youBetter=rd.diff!==null&&rd.partnerDiff!==null&&rd.diff<=rd.partnerDiff;
+      const taBetter=rd.diff!==null&&rd.partnerDiff!==null&&rd.partnerDiff<rd.diff;
+      return `<div class="round-row">
+        <div class="rr-num">${i+1}</div>
+        <div class="rr-grade">${gradeIcon[rd.grade]}</div>
+        <div class="rr-you ${youBetter?'rr-winner':''}">${youMs}</div>
+        <div class="rr-vs">vs</div>
+        <div class="rr-ta ${taBetter?'rr-winner':''}">${taMs}</div>
       </div>`;
-    }
+    }).join('');
+
+    // ── 双人总分对比 ──
+    const youTotal=r.roundDetails.filter(rd=>rd.diff!==null&&rd.partnerDiff!==null&&rd.diff<=rd.partnerDiff).length;
+    const taTotal=r.roundDetails.filter(rd=>rd.diff!==null&&rd.partnerDiff!==null&&rd.partnerDiff<rd.diff).length;
+    const winnerText=youTotal>taTotal?'🏆 你赢了！这次你更精准':taTotal>youTotal?'TA赢了～下次加油追上':'🤝 平局！默契十足';
 
     const nextAction=r.passed&&hasNext?`App.goPreGame(${r.levelIdx+1})`:`App.goPreGame(${r.levelIdx})`;
     const nextText=r.passed&&hasNext?`下一关：${DATA.levels[r.levelIdx+1].name} →`:'再挑战一次';
@@ -1367,25 +1444,34 @@ const App=(()=>{
         <div class="result-best-label">本关最小误差</div>
         <div class="result-candy" id="result-candy-box">
           ${candy}
-          <button class="speak-btn" onclick="Voice.speak(document.getElementById('result-candy-box').innerText)" title="朗读">🔊</button>
+          <button class="speak-btn" onclick="Voice.speak('${candy.replace(/'/g,"\\'")}')">🔊</button>
         </div>
       </div>
-      ${dualHtml}
+
+      <div class="dual-result">
+        <div class="dual-result-title">每轮成绩对比</div>
+        <div class="round-table-header">
+          <span style="width:24px"></span>
+          <span style="width:20px"></span>
+          <span style="flex:1;text-align:center;color:var(--pink)">你</span>
+          <span style="width:24px"></span>
+          <span style="flex:1;text-align:center;color:var(--purple)">TA</span>
+        </div>
+        ${roundRows}
+        <div class="round-winner">${winnerText}</div>
+      </div>
+
       <div class="result-stats">
         <div class="stat-card"><div class="stat-val">${r.perfects}</div><div class="stat-lbl">✨ 完美</div></div>
         <div class="stat-card"><div class="stat-val">${r.goods}</div><div class="stat-lbl">💕 良好</div></div>
         <div class="stat-card"><div class="stat-val">${r.fails}</div><div class="stat-lbl">💣 失误</div></div>
       </div>
-      <div class="result-compare">
-        <div class="compare-title">本关表现分布</div>
-        ${_cbar('完美同步',pct.perfect,'bar-perfect')}${_cbar('良好',pct.good,'bar-good')}${_cbar('差一点',pct.close,'bar-close')}${_cbar('走火',pct.fail,'bar-fail')}
-      </div>
+
       ${unlockHtml}${badgeHtml}
       <div class="result-actions">
         <button class="main-btn secondary" style="flex:1" onclick="App.goHome()">选关</button>
         <button class="main-btn" style="flex:2" onclick="${nextAction}">${nextText}</button>
       </div>`;
-    // speak result candy（结果页朗读，不阻塞UI）
     Voice.speak(candy);
     _show('result');
   }
@@ -1434,14 +1520,16 @@ const App=(()=>{
   function closeSettings(e){if(!e||e.target===_el('settings-modal'))_el('settings-modal').classList.remove('open');}
   function setVoice(m){
     Voice.setMode(m);
-    document.querySelectorAll('#voice-ctrl .seg-btn').forEach(b=>b.classList.remove('active'));
-    document.querySelector(`#voice-ctrl .seg-btn[onclick*="${m}"]`)?.classList.add('active');
+    document.querySelectorAll('#voice-ctrl .seg-btn').forEach(b=>{
+      b.classList.toggle('active', b.dataset.voice===m);
+    });
     if(m==='recorded'){
       const cnt=Voice.getRecordedCount();
       if(cnt===0){alert('还没有录音哦～先去录音室录制吧！');}
       else{Voice.speak('设置成功，现在是真声模式');}
     } else if(m!=='off'){
-      Voice.speak('设置完成，声音就像这样哦');}
+      Voice.speak('设置完成，声音就像这样哦');
+    }
   }
   function setRate(v){Voice.setRate(v);}
   function setVibration(on){
@@ -1460,7 +1548,7 @@ const App=(()=>{
     }
   }
 
-  return{initSplash,goHome,goChapter,goPreGame,startGame,continueGame,showResult,goProfile,goStudio,openSettings,closeSettings,setVoice,setRate,setVibration,startRec,stopRec,playRec,deleteRec,clearAllRecordings};
+  return{initSplash,goHome,goChapter,goPreGame,startGame,continueGame,showResult,goProfile,goStudio,openSettings,closeSettings,setVoice,setRate,setVibration,startRec,stopRec,playRec,deleteRec,clearAllRecordings,toggleEdit,closeEdit,saveCustomText,resetCustomText};
 })();
 
 // ===================== INIT =====================
