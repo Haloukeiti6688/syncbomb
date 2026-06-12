@@ -70,6 +70,25 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .studio-tip{background:var(--surface);border-radius:var(--r);padding:12px 14px;font-size:12px;color:var(--text3);line-height:1.7}
 .studio-tip strong{color:var(--text2)}
 
+/* ── CLOUD SYNC ── */
+.sync-card{background:var(--surface);border:1px solid rgba(167,139,250,.3);border-radius:var(--rlg);padding:16px;margin-bottom:16px}
+.sync-title{font-size:14px;font-weight:600;color:var(--purple);margin-bottom:5px}
+.sync-desc{font-size:12px;color:var(--text3);line-height:1.6;margin-bottom:12px}
+.sync-couple-row{margin-bottom:10px}
+.sync-label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px}
+.sync-id-wrap{display:flex;gap:6px}
+.sync-input{flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--rsm);padding:9px 12px;font-size:13px;color:var(--text);font-family:var(--font);outline:none}
+.sync-input:focus{border-color:var(--purple)}
+.sync-btn{padding:9px 14px;border-radius:var(--rsm);font-size:12px;font-weight:500;cursor:pointer;border:none;white-space:nowrap;transition:all .15s}
+.sync-btn:active{transform:scale(.95)}
+.sync-btn-primary{background:var(--purple);color:#fff}
+.sync-btn-secondary{background:rgba(167,139,250,.15);color:var(--purple);border:1px solid rgba(167,139,250,.3)}
+.sync-divider{text-align:center;font-size:12px;color:var(--text3);margin:10px 0}
+.sync-status{font-size:12px;min-height:18px;margin-top:6px;text-align:center;line-height:1.5}
+.sync-status.ok{color:var(--green)}
+.sync-status.err{color:var(--red)}
+.sync-status.loading{color:var(--text3)}
+
 /* ── ROUND TABLE ── */
 .round-table-header{display:flex;align-items:center;gap:6px;margin-bottom:6px;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;padding:0 2px}
 .round-row{display:flex;align-items:center;gap:6px;padding:8px 6px;border-radius:var(--rsm);margin-bottom:4px;background:var(--surface2)}
@@ -471,7 +490,29 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
   <div class="studio-body">
     <div class="studio-intro">
       <strong>用TA的声音说甜蜜话 💕</strong><br>
-      让另一半录下每一句甜蜜文案，游戏时就会播放TA真实的声音。录音保存在本机，完全私密。
+      录好之后可以一键同步给对方——对方导入后，游戏里播放的就是你的真实声音。
+    </div>
+
+    <!-- 云端同步区域 -->
+    <div class="sync-card" id="sync-card">
+      <div class="sync-title">☁️ 情侣声音同步</div>
+      <div class="sync-desc">录好声音后上传，生成专属情侣码发给TA；TA输入情侣码即可听到你的声音</div>
+      <div class="sync-couple-row">
+        <div class="sync-label">我的情侣码</div>
+        <div class="sync-id-wrap">
+          <input class="sync-input" id="sync-my-id" placeholder="设置一个专属情侣码（如 love2024）" maxlength="20">
+          <button class="sync-btn sync-btn-primary" onclick="App.uploadVoice()">上传声音 ↑</button>
+        </div>
+      </div>
+      <div class="sync-divider">— 或者 —</div>
+      <div class="sync-couple-row">
+        <div class="sync-label">导入TA的声音</div>
+        <div class="sync-id-wrap">
+          <input class="sync-input" id="sync-partner-id" placeholder="输入TA给你的情侣码">
+          <button class="sync-btn sync-btn-secondary" onclick="App.downloadVoice()">导入声音 ↓</button>
+        </div>
+      </div>
+      <div class="sync-status" id="sync-status"></div>
     </div>
     <div class="studio-progress">
       <div style="font-size:28px">🎙️</div>
@@ -797,7 +838,14 @@ const Voice=(()=>{
   function cancel(){if(_synth)_synth.cancel();}
 
   loadRecordings();
-  return{speak,setMode,setRate,getMode,getRate,cancel,saveRecording,hasRecording,getRecording,getRecordedCount,clearRecordings,playRecording,_clean};
+  // 直接按key导入录音（用于云端下载）
+  function _importRecording(key, base64Audio){
+    if(base64Audio) _recordings[key]=base64Audio;
+    else delete _recordings[key];
+    _persist();
+  }
+
+  return{speak,setMode,setRate,getMode,getRate,cancel,saveRecording,hasRecording,getRecording,getRecordedCount,clearRecordings,playRecording,_clean,_recKey,_importRecording};
 })();
 
 // ===================== FAKE SIGNALS =====================
@@ -1108,19 +1156,19 @@ const Game=(()=>{
 
   function _showFeedback(diff,grade,youFirst){
     const arr=DATA.candy[grade];
-    const candy=arr[Math.floor(Math.random()*arr.length)];
-    // 如果用户自定义了这句文案，显示和播放都用自定义版
-    const displayCandy=App._getDisplayText?App._getDisplayText(candy):candy;
+    const origCandy=arr[Math.floor(Math.random()*arr.length)];
+    // 显示用自定义文案，播放用原文触发录音key
+    const displayCandy=App._getDisplayText?App._getDisplayText(origCandy):origCandy;
     const icon={perfect:'✨',good:'💕',close:'🌸',fail:'💣'}[grade];
     const dText=diff!==null?`误差 ${diff.toFixed(0)}ms · ${youFirst?'你早了一点':'你晚了一点'}`:'';
-    const hasRec=Voice.hasRecording(candy);
+    const hasRec=Voice.hasRecording(origCandy);
     const speakIcon=Voice.getMode()!=='off'?(hasRec?'🎙️':'🔊'):'';
     _el('round-result').innerHTML=`<div class="candy-text">${icon} ${displayCandy} <span style="font-size:11px;color:var(--purple);opacity:.7">${speakIcon}</span></div>${dText?`<div class="diff-text">${dText}</div>`:''}`;
     _setBtn('done');_el('press-feedback').textContent='';
     _el('game-arena').className='game-arena arena-result';
     _el('arena-state-emoji').textContent={perfect:'🎆',good:'💓',close:'😅',fail:'💥'}[grade];
     _el('arena-task').textContent='';_el('arena-sub').textContent='';
-    return candy; // 返回原文，speak内部会查录音key
+    return origCandy; // 返回原文，speak内部查录音key
   }
 
   function _setBtn(state){
@@ -1574,7 +1622,92 @@ const App=(()=>{
     }
   }
 
-  return{initSplash,goHome,goChapter,goPreGame,startGame,continueGame,showResult,goProfile,goStudio,openSettings,closeSettings,setVoice,setRate,setVibration,startRec,stopRec,playRec,deleteRec,clearAllRecordings,toggleEdit,closeEdit,saveCustomText,resetCustomText,_getDisplayText};
+  // ── 云端同步 ──
+  const SERVER = 'http://101.35.214.253:3001';
+
+  function _syncStatus(msg, type){
+    const el=_el('sync-status');
+    if(!el)return;
+    el.textContent=msg;
+    el.className='sync-status'+(type?' '+type:'');
+  }
+
+  async function uploadVoice(){
+    const coupleId=(_el('sync-my-id').value||'').trim();
+    if(!coupleId){_syncStatus('请先设置一个情侣码','err');return;}
+    if(!/^[a-zA-Z0-9\u4e00-\u9fa5_-]{2,20}$/.test(coupleId)){
+      _syncStatus('情侣码只能用字母、数字、中文，2-20个字符','err');return;
+    }
+    const recCount=Voice.getRecordedCount();
+    if(recCount===0){_syncStatus('还没有录音哦，先录几条再上传','err');return;}
+    _syncStatus('上传中…','loading');
+    try{
+      // 把录音数据和自定义文案打包上传
+      const recordings={};
+      // 遍历所有录音
+      const texts=_allCandyTexts();
+      texts.forEach(t=>{
+        const rec=Voice.getRecording(t);
+        if(rec)recordings[Voice._recKey?Voice._recKey(t):t]=rec;
+      });
+      const resp=await fetch(`${SERVER}/upload`,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({coupleId,recordings,customTexts:_customTexts})
+      });
+      const data=await resp.json();
+      if(data.ok){
+        _syncStatus(`✓ 上传成功！把情侣码「${coupleId}」发给TA，让TA导入`,'ok');
+        // 保存自己的coupleId
+        localStorage.setItem('syncbomb_my_couple_id',coupleId);
+      } else {
+        _syncStatus('上传失败：'+data.msg,'err');
+      }
+    }catch(e){
+      _syncStatus('网络错误，请检查网络后重试','err');
+    }
+  }
+
+  async function downloadVoice(){
+    const coupleId=(_el('sync-partner-id').value||'').trim();
+    if(!coupleId){_syncStatus('请输入TA给你的情侣码','err');return;}
+    _syncStatus('下载中…','loading');
+    try{
+      const resp=await fetch(`${SERVER}/download?coupleId=${encodeURIComponent(coupleId)}`);
+      const data=await resp.json();
+      if(data.ok){
+        // 导入录音数据
+        const recs=data.recordings||{};
+        let count=0;
+        // 把下载的录音按key存入本地
+        Object.entries(recs).forEach(([key,base64])=>{
+          if(base64){
+            // 直接存入_recordings（通过内部key）
+            Voice._importRecording(key,base64);
+            count++;
+          }
+        });
+        // 导入自定义文案
+        if(data.customTexts){
+          Object.assign(_customTexts,data.customTexts);
+          _saveCustomTexts();
+        }
+        // 自动切换到真声模式
+        Voice.setMode('recorded');
+        document.querySelectorAll('#voice-ctrl .seg-btn').forEach(b=>{
+          b.classList.toggle('active',b.dataset.voice==='recorded');
+        });
+        _syncStatus(`✓ 导入成功！共${count}条声音，已自动切换到真声模式 🎙️`,'ok');
+        _buildStudio();
+      } else {
+        _syncStatus('导入失败：'+data.msg,'err');
+      }
+    }catch(e){
+      _syncStatus('网络错误，请检查网络后重试','err');
+    }
+  }
+
+  return{initSplash,goHome,goChapter,goPreGame,startGame,continueGame,showResult,goProfile,goStudio,openSettings,closeSettings,setVoice,setRate,setVibration,startRec,stopRec,playRec,deleteRec,clearAllRecordings,toggleEdit,closeEdit,saveCustomText,resetCustomText,_getDisplayText,uploadVoice,downloadVoice};
 })();
 
 // ===================== INIT =====================
