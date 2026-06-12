@@ -70,7 +70,44 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .studio-tip{background:var(--surface);border-radius:var(--r);padding:12px 14px;font-size:12px;color:var(--text3);line-height:1.7}
 .studio-tip strong{color:var(--text2)}
 
-/* ── CLOUD SYNC ── */
+/* ── SHARE CARD ── */
+.share-modal{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;opacity:0;pointer-events:none;transition:opacity .25s}
+.share-modal.open{opacity:1;pointer-events:all}
+.share-sheet{background:var(--bg2);border-radius:24px 24px 0 0;padding:20px 20px 40px;width:100%;max-width:480px;transform:translateY(100%);transition:transform .3s ease}
+.share-modal.open .share-sheet{transform:translateY(0)}
+.share-sheet-title{font-size:15px;font-weight:700;text-align:center;margin-bottom:16px;color:var(--text)}
+
+/* 战报卡本体 */
+.share-card{border-radius:20px;overflow:hidden;margin-bottom:16px;position:relative}
+.sc-bg{background:linear-gradient(135deg,#1a0a2e 0%,#2d1b4e 50%,#1a1528 100%);padding:24px 20px;position:relative}
+.sc-bg::before{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")}
+.sc-header{display:flex;align-items:center;gap:10px;margin-bottom:18px;position:relative;z-index:1}
+.sc-bomb{font-size:28px}
+.sc-game-name{font-size:13px;font-weight:700;color:rgba(255,255,255,.9);letter-spacing:2px}
+.sc-game-sub{font-size:10px;color:rgba(255,255,255,.4);margin-top:1px}
+.sc-players{display:flex;align-items:center;gap:0;margin-bottom:18px;position:relative;z-index:1}
+.sc-player{flex:1;text-align:center}
+.sc-player-emoji{font-size:32px;margin-bottom:4px}
+.sc-player-name{font-size:12px;color:rgba(255,255,255,.7);margin-bottom:6px}
+.sc-player-ms{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
+.sc-player-ms.winner{background:linear-gradient(135deg,#ffd166,#ff6eb4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.sc-player-ms.loser{color:rgba(255,255,255,.4)}
+.sc-vs{width:32px;text-align:center;font-size:11px;color:rgba(255,255,255,.3);font-weight:600}
+.sc-result-bar{height:6px;background:rgba(255,255,255,.1);border-radius:3px;margin-bottom:14px;position:relative;z-index:1;overflow:hidden}
+.sc-result-fill{height:6px;border-radius:3px;background:linear-gradient(90deg,#ff6eb4,#ffd166);transition:width 1s ease}
+.sc-candy{font-size:13px;color:rgba(255,255,255,.85);text-align:center;line-height:1.6;padding:10px 12px;background:rgba(255,255,255,.06);border-radius:10px;margin-bottom:14px;position:relative;z-index:1;font-weight:500}
+.sc-footer{display:flex;align-items:center;justify-content:space-between;position:relative;z-index:1}
+.sc-level{font-size:11px;color:rgba(255,255,255,.4)}
+.sc-stars{font-size:14px;letter-spacing:2px}
+.sc-invite{background:rgba(255,110,180,.2);border:1px solid rgba(255,110,180,.4);border-radius:100px;padding:5px 14px;font-size:11px;color:#ff9dd0;font-weight:500}
+
+/* 分享按钮区 */
+.share-actions{display:flex;gap:8px}
+.share-action-btn{flex:1;padding:12px;border-radius:var(--r);font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .15s;text-align:center}
+.share-action-btn:active{transform:scale(.96)}
+.sab-copy{background:var(--pink);color:#fff}
+.sab-invite{background:var(--surface2);color:var(--text2);border:1px solid var(--border2)}
+.share-tip{font-size:11px;color:var(--text3);text-align:center;margin-top:10px}
 .sync-card{background:var(--surface);border:1px solid rgba(167,139,250,.3);border-radius:var(--rlg);padding:16px;margin-bottom:16px}
 .sync-title{font-size:14px;font-weight:600;color:var(--purple);margin-bottom:5px}
 .sync-desc{font-size:12px;color:var(--text3);line-height:1.6;margin-bottom:12px}
@@ -400,7 +437,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
     <button class="back-btn floating-back" onclick="App.goHome()">←</button>
     <div class="lobby-hero">
       <div class="lobby-emoji" id="lobby-emoji">💣</div>
-      <div class="lobby-title" id="lobby-title">双人联机</div>
+      <div class="lobby-title" id="lobby-title">找搭档一起玩</div>
       <div class="lobby-sub" id="lobby-sub">两颗心，同一个节奏</div>
     </div>
 
@@ -412,7 +449,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
         <button class="lobby-level-btn" onclick="App.goHome()">更换 ›</button>
       </div>
       <button class="main-btn" onclick="App.createRoom()" style="margin-bottom:10px">
-        💕 创建房间（我来邀请对象）
+        💕 创建房间（发给搭档）
       </button>
       <div class="lobby-or">— 或者 —</div>
       <div class="lobby-join-wrap">
@@ -454,7 +491,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
           <div class="lobby-player-status ready">已就绪</div>
         </div>
       </div>
-      <div class="lobby-ready-tip">两人都进入游戏后自动开始</div>
+      <div class="lobby-ready-tip">两人都准备好后自动开始</div>
       <button class="main-btn" id="lobby-start-btn" onclick="App.startMultiGame()">
         开始游戏 🎮
       </button>
@@ -474,7 +511,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
       <h1 class="splash-title">同步炸弹</h1>
       <p class="splash-sub">两颗心，同一个节奏<br>误差越小，甜蜜越多</p>
       <button class="cta-btn" onclick="App.goHome()"><span>开始游戏</span><span>→</span></button>
-      <p class="splash-hint">拉上另一半一起玩效果更佳 💕</p>
+      <p class="splash-hint">找到你的搭档一起玩效果更佳 💕</p>
     </div>
   </div>
 </div>
@@ -643,7 +680,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
       · 按住 🔴 开始录音，松手结束<br>
       · 按 ▶️ 试听效果<br>
       · 录好后在设置里切换到"真声"模式即可<br>
-      · 建议找另一半在安静环境下录制，效果更好
+      · 建议找搭档在安静环境下录制，效果更好
     </div>
   </div>
 </div>
@@ -689,6 +726,51 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
       </div>
     </div>
     <button class="main-btn secondary" style="margin-top:8px" onclick="App.closeSettings()">完成</button>
+  </div>
+</div>
+
+<!-- share modal 战报分享 -->
+<div class="share-modal" id="share-modal" onclick="ShareCard.close(event)">
+  <div class="share-sheet" onclick="event.stopPropagation()">
+    <div class="share-sheet-title">分享战报 🎯</div>
+    <div class="share-card" id="share-card">
+      <div class="sc-bg">
+        <div class="sc-header">
+          <div class="sc-bomb">💣</div>
+          <div>
+            <div class="sc-game-name">同步炸弹</div>
+            <div class="sc-game-sub">两颗心，同一个节奏</div>
+          </div>
+        </div>
+        <div class="sc-players">
+          <div class="sc-player">
+            <div class="sc-player-emoji">🙋</div>
+            <div class="sc-player-name" id="sc-p1-name">你</div>
+            <div class="sc-player-ms" id="sc-p1-ms">—</div>
+          </div>
+          <div class="sc-vs">VS</div>
+          <div class="sc-player">
+            <div class="sc-player-emoji">🌸</div>
+            <div class="sc-player-name" id="sc-p2-name">搭档</div>
+            <div class="sc-player-ms" id="sc-p2-ms">—</div>
+          </div>
+        </div>
+        <div class="sc-result-bar">
+          <div class="sc-result-fill" id="sc-result-fill" style="width:50%"></div>
+        </div>
+        <div class="sc-candy" id="sc-candy">两颗心找到了同一个节奏 💕</div>
+        <div class="sc-footer">
+          <div class="sc-level" id="sc-level">第1关 · 第一次握手</div>
+          <div class="sc-stars" id="sc-stars">⭐☆☆</div>
+          <div class="sc-invite">来挑战我 →</div>
+        </div>
+      </div>
+    </div>
+    <div class="share-actions">
+      <button class="share-action-btn sab-copy" onclick="ShareCard.copyInvite()">📋 复制邀请文字</button>
+      <button class="share-action-btn sab-invite" onclick="ShareCard.saveImage()">🖼️ 保存战报图</button>
+    </div>
+    <div class="share-tip">复制后发给朋友，对方点链接直接加入游戏</div>
   </div>
 </div>
 
@@ -1165,7 +1247,7 @@ const Game=(()=>{
     // partner holds after short delay
     setTimeout(()=>{
       _el('pp-partner').className='player-panel pp-partner holding';
-      _setPanel('partner',null,'按住中','TA也按住了 ✓',60,'var(--green)');
+      _setPanel('partner',null,'按住中','搭档也按住了 ✓',60,'var(--green)');
     },150+Math.random()*350);
     // AI offset
     const t=_level.threshold;
@@ -1366,7 +1448,7 @@ const Multi = (() => {
   let _roomCode = '';
   let _isHost = false;
   let _myNickname = '我';
-  let _partnerNickname = '另一半';
+  let _partnerNickname = '搭档';
   let _levelIdx = 0;
   let _connected = false;
   let _releaseCmd = 0;
@@ -1977,11 +2059,17 @@ const App=(()=>{
       ${unlockHtml}${badgeHtml}
       <div class="result-actions">
         <button class="main-btn secondary" style="flex:1" onclick="App.goHome()">选关</button>
-        <button class="main-btn" style="flex:2" onclick="${nextAction}">${nextText}</button>
+        <button class="main-btn" style="flex:1" onclick="App.showShareCard()">分享战报 🎯</button>
+        <button class="main-btn" style="flex:1" onclick="${nextAction}">${nextText}</button>
       </div>`;
-    Voice.speak(candy); // 用原文触发录音key匹配
+    Voice.speak(candy);
+    // 存储战报数据供分享用
+    _lastResult = { p1Ms:r.bestMs, p2Ms:r.bestMs?Math.max(8,r.bestMs+Math.round((Math.random()-.3)*r.level.threshold*0.6)):null, candy:candy, levelName:r.level.name, stars:r.finalStars };
     _show('result');
   }
+
+  let _lastResult = null;
+  function showShareCard(){ if(_lastResult) ShareCard.show(_lastResult); }
 
   function _cbar(l,p,c){return `<div class="compare-item"><span style="width:56px;flex-shrink:0;font-size:11px">${l}</span><div class="compare-bar-wrap"><div class="compare-bar-fill ${c}" style="width:${p}%"></div></div><span style="width:32px;text-align:right;font-size:11px;color:var(--text3)">${p}%</span></div>`;}
   function _pickCandy(r){const g=r.finalStars===3?'perfect':r.finalStars>=2?'good':r.finalStars>=1?'close':'fail';const a=DATA.candy[g];return a[Math.floor(Math.random()*a.length)];}
@@ -2140,17 +2228,155 @@ const App=(()=>{
     }
   }
 
-  return{initSplash,goHome,goChapter,goPreGame,startGame,continueGame,showResult,goProfile,goStudio,goLobby,createRoom,joinRoom,startMultiGame,copyRoomCode,openSettings,closeSettings,setVoice,setRate,setVibration,startRec,stopRec,playRec,deleteRec,clearAllRecordings,toggleEdit,closeEdit,saveCustomText,resetCustomText,_getDisplayText,uploadVoice,downloadVoice,isMultiMode,exitMultiMode};
+  return{initSplash,goHome,goChapter,goPreGame,startGame,continueGame,showResult,showShareCard,goProfile,goStudio,goLobby,createRoom,joinRoom,startMultiGame,copyRoomCode,openSettings,closeSettings,setVoice,setRate,setVibration,startRec,stopRec,playRec,deleteRec,clearAllRecordings,toggleEdit,closeEdit,saveCustomText,resetCustomText,_getDisplayText,uploadVoice,downloadVoice,isMultiMode,exitMultiMode};
 })();
 
-// ===================== INIT =====================
+// ===================== SHARE CARD 战报分享 =====================
+const ShareCard = (() => {
+  const BASE_URL = 'https://haloukeiti6688.github.io/syncbomb/';
+  let _data = {};
+
+  function show(data){
+    _data = data;
+    const { p1Ms, p2Ms, candy, levelName, stars, p1Name, p2Name } = data;
+
+    // 判断谁更准
+    const p1Win = p1Ms !== null && (p2Ms === null || p1Ms <= p2Ms);
+    const p2Win = p2Ms !== null && (p1Ms === null || p2Ms < p1Ms);
+
+    _el('sc-p1-name').textContent = p1Name || '你';
+    _el('sc-p2-name').textContent = p2Name || '搭档';
+    _el('sc-p1-ms').textContent = p1Ms !== null ? p1Ms.toFixed(0)+'ms' : '—';
+    _el('sc-p2-ms').textContent = p2Ms !== null ? p2Ms.toFixed(0)+'ms' : '—';
+    _el('sc-p1-ms').className = 'sc-player-ms' + (p1Win?' winner':' loser');
+    _el('sc-p2-ms').className = 'sc-player-ms' + (p2Win?' winner':' loser');
+
+    // 结果条：谁更准条更长
+    const total = (p1Ms||0) + (p2Ms||0);
+    const p1Pct = total > 0 ? Math.max(10, Math.min(90, (1-(p1Ms||0)/total)*100)) : 50;
+    _el('sc-result-fill').style.width = p1Pct + '%';
+
+    // 甜蜜文案（去掉emoji只保留文字用于显示，卡片里手动加心）
+    const cleanCandy = (candy||'两颗心找到了同一个节奏').replace(/[\u{1F000}-\u{1FFFF}|\u{2600}-\u{27FF}]/gu,'').trim();
+    _el('sc-candy').textContent = cleanCandy + ' 💕';
+    _el('sc-level').textContent = levelName || '第1关';
+    _el('sc-stars').textContent = '⭐'.repeat(stars||0)+'☆'.repeat(3-(stars||0));
+
+    // 打开弹窗
+    _el('share-modal').classList.add('open');
+  }
+
+  function close(e){
+    if(!e || e.target === _el('share-modal')){
+      _el('share-modal').classList.remove('open');
+    }
+  }
+
+  function _buildInviteText(){
+    const { p1Ms, p2Ms, levelName, p1Name } = _data;
+    const msText = p1Ms !== null ? `我的误差是 ${p1Ms.toFixed(0)}ms` : '来挑战我';
+    // 生成带邀请参数的链接
+    const myId = _getMyId();
+    const link = `${BASE_URL}?invite=${myId}`;
+    return `💣 我在玩同步炸弹！\n关卡：${levelName||'第1关'}\n${msText}，你能比我更准吗？\n\n点击来挑战我 👇\n${link}`;
+  }
+
+  function _getMyId(){
+    // 用本地存储的ID，没有就生成一个
+    let id = localStorage.getItem('syncbomb_my_id');
+    if(!id){
+      id = 'u' + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+      localStorage.setItem('syncbomb_my_id', id);
+    }
+    return id;
+  }
+
+  function copyInvite(){
+    const text = _buildInviteText();
+    if(navigator.clipboard){
+      navigator.clipboard.writeText(text).then(()=>{
+        _showCopySuccess();
+      }).catch(()=>_fallbackCopy(text));
+    } else {
+      _fallbackCopy(text);
+    }
+  }
+
+  function _fallbackCopy(text){
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try{ document.execCommand('copy'); _showCopySuccess(); }catch(e){}
+    document.body.removeChild(ta);
+  }
+
+  function _showCopySuccess(){
+    const btn = document.querySelector('.sab-copy');
+    if(btn){ btn.textContent = '✓ 已复制！去发给TA吧'; btn.style.background='var(--green)'; }
+    setTimeout(()=>{
+      if(btn){ btn.textContent = '📋 复制邀请文字'; btn.style.background=''; }
+    }, 2500);
+  }
+
+  function saveImage(){
+    // 用html2canvas截图保存（动态加载库）
+    const card = _el('share-card');
+    if(window.html2canvas){
+      _doCapture(card);
+    } else {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+      s.onload = ()=>_doCapture(card);
+      document.head.appendChild(s);
+    }
+  }
+
+  function _doCapture(card){
+    const btn = document.querySelector('.sab-invite');
+    if(btn) btn.textContent = '生成中…';
+    html2canvas(card, {
+      backgroundColor: null,
+      scale: 2,
+      useCORS: true,
+      logging: false
+    }).then(canvas=>{
+      // 在canvas上叠加邀请链接文字
+      const ctx = canvas.getContext('2d');
+      const myId = _getMyId();
+      const link = `${BASE_URL}?invite=${myId}`;
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.font = `${canvas.width*0.02}px -apple-system, sans-serif`;
+      ctx.fillText(link, canvas.width*0.05, canvas.height*0.97);
+
+      const url = canvas.toDataURL('image/png');
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = '同步炸弹战报.png';
+      a.click();
+      if(btn) btn.textContent = '✓ 已保存！';
+      setTimeout(()=>{ if(btn) btn.textContent = '🖼️ 保存战报图'; }, 2000);
+    }).catch(()=>{
+      if(btn) btn.textContent = '🖼️ 保存战报图';
+      alert('截图失败，请手动截屏保存');
+    });
+  }
+
+  function _el(id){ return document.getElementById(id); }
+
+  return { show, close, copyInvite, saveImage, _getMyId };
+})();
 App.initSplash();
-// 检测URL里的room参数，自动加入房间
-(function checkRoomFromURL(){
+
+// 检测URL参数
+(function checkURLParams(){
   const params = new URLSearchParams(location.search);
+
+  // 房间码：自动加入联机
   const room = params.get('room');
   if(room && /^\d{6}$/.test(room)){
-    // 延迟一下等页面加载完
     setTimeout(()=>{
       App.goLobby();
       setTimeout(()=>{
@@ -2158,8 +2384,26 @@ App.initSplash();
         if(input){ input.value = room; App.joinRoom(); }
       }, 500);
     }, 300);
+    return;
+  }
+
+  // 邀请码：显示邀请提示
+  const invite = params.get('invite');
+  if(invite){
+    setTimeout(()=>{
+      localStorage.setItem('syncbomb_invited_by', invite);
+      _showInviteBanner();
+    }, 800);
   }
 })();
+
+function _showInviteBanner(){
+  const banner = document.createElement('div');
+  banner.style.cssText = 'position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#2d1b4e,#1a1528);border:1px solid rgba(255,110,180,.3);border-radius:16px;padding:14px 20px;text-align:center;z-index:300;box-shadow:0 8px 32px rgba(0,0,0,.4);max-width:280px;width:90%;';
+  banner.innerHTML = '<div style="font-size:22px;margin-bottom:6px">💣</div><div style="font-size:14px;font-weight:600;color:#f0e6ff;margin-bottom:4px">朋友邀请你来挑战！</div><div style="font-size:12px;color:rgba(240,230,255,.6);margin-bottom:12px">来和TA一起玩同步炸弹</div><button onclick="App.goLobby();this.parentElement.remove();" style="background:linear-gradient(135deg,#ff6eb4,#a78bfa);border:none;border-radius:100px;padding:9px 24px;color:#fff;font-size:13px;font-weight:600;cursor:pointer;width:100%">接受挑战 →</button>';
+  document.body.appendChild(banner);
+  setTimeout(()=>{ if(banner.parentNode) banner.remove(); }, 8000);
+}
 </script>
 </body>
 </html>
