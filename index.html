@@ -650,9 +650,9 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
       <div class="sync-title">☁️ 情侣声音同步</div>
       <div class="sync-desc">录好声音后上传，生成专属情侣码发给TA；TA输入情侣码即可听到你的声音</div>
       <div class="sync-couple-row">
-        <div class="sync-label">我的情侣码</div>
+        <div class="sync-label">我的声音码（唯一自动生成）</div>
         <div class="sync-id-wrap">
-          <input class="sync-input" id="sync-my-id" placeholder="设置一个专属情侣码（如 love2024）" maxlength="20">
+          <div class="sync-input" id="sync-my-id" style="display:flex;align-items:center;font-weight:700;letter-spacing:2px;cursor:text;color:var(--gold);font-size:15px"></div>
           <button class="sync-btn sync-btn-primary" onclick="App.uploadVoice()">上传声音 ↑</button>
         </div>
       </div>
@@ -1125,6 +1125,21 @@ const Game=(()=>{
   let _youReleaseTime=0,_partnerReleaseTime=0;
 
   let _multiMode = false;
+  let _multiReleaseTime = 0;
+  let _multiTimeoutTimer = null;
+
+  // 联机超时保护：等待服务器结果超过3秒，自动用本地时间计算
+  function _startMultiTimeout(myReleaseTime, isEarly){
+    clearTimeout(_multiTimeoutTimer);
+    _multiTimeoutTimer = setTimeout(()=>{
+      if(_phase !== 'done' && _phase !== 'idle') return;
+      if(_round >= (_level ? _level.rounds : 3)) return;
+      console.warn('联机结果超时，使用本地计算');
+      // 用本地时间估算：假设对方在指令发出后300ms松手
+      const estimatedDiff = isEarly ? 777 : Math.abs(myReleaseTime - _releaseCmd);
+      _recordRound(Math.min(estimatedDiff, 999), !isEarly);
+    }, 3000);
+  }
 
   function initLevel(idx, multiMode){
     _multiMode = multiMode || false;
@@ -1274,14 +1289,20 @@ const Game=(()=>{
         _setBtn('idle');_phase='idle';
         _el('pp-you').className='player-panel pp-you released';
         _setPanel('you',null,'太早了','早松了',100,'var(--red)');
+        // 早松也记录，3秒后超时保护
+        _multiReleaseTime=now;
+        _startMultiTimeout(now, true);
       } else if(_phase==='release'){
         _phase='done';
         _youReleaseTime=now;
+        _multiReleaseTime=now;
         _setBtn('done');
         _el('pp-you').className='player-panel pp-you released';
         _setPanel('you',null,'已松手','等待结果…',100,'var(--pink)');
+        // 超时保护：3秒没收到服务器结果，本地计算
+        _startMultiTimeout(now, false);
       }
-      return; // 等服务器回调 _onMultiRoundResult
+      return;
     }
     if(_phase==='holding'){
       _el('arena-state-emoji').textContent='😅';
@@ -1301,12 +1322,21 @@ const Game=(()=>{
   }
 
   // 联机模式：服务器返回本轮结果
+  // 联机模式：服务器返回本轮结果
   function _onMultiRoundResult(result){
-    const me = result.p1.id === Multi.getIsHost() ? result.p1 : result.p2;
-    const partner = result.p1.id === Multi.getIsHost() ? result.p2 : result.p1;
+    clearTimeout(_multiTimeoutTimer); // 收到结果，取消超时保护
+    const mySocketId = Multi.getMySocketId();
+    const me = result.p1.id === mySocketId ? result.p1 : result.p2;
+    const partner = result.p1.id === mySocketId ? result.p2 : result.p1;
     const diff = result.diff;
     const youFirst = me.timestamp < partner.timestamp;
-    _recordRound(diff, youFirst, partner.timestamp);
+    // 更新对方面板显示
+    const pDiff = partner.timestamp > 0 ? Math.abs(partner.timestamp - _releaseCmd) : null;
+    if(pDiff !== null){
+      _el('pp-partner').className='player-panel pp-partner released';
+      _setPanel('partner',null,pDiff.toFixed(0)+'ms','TA的误差',100,'var(--purple)');
+    }
+    _recordRound(diff, youFirst);
   }
 
   // 联机：收到松手信号
@@ -1440,7 +1470,18 @@ const Multi = (() => {
   }
 
   function _doConnect(){
-    _socket = io(SERVER, { transports:['websocket','polling'] });
+    _socket = io(SERVER, {
+      transports:['websocket','polling'],
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      timeout: 10000
+    });
+
+    // 心跳检测
+    let _heartbeat = setInterval(()=>{
+      if(_socket && _socket.connected) _socket.emit('ping_heartbeat');
+    }, 5000);
 
     _socket.on('connect', ()=>{
       _connected = true;
@@ -1606,6 +1647,7 @@ const Multi = (() => {
   function setOnRoundResult(cb){ _onRoundResult = cb; }
   function getRoomCode(){ return _roomCode; }
   function getIsHost(){ return _isHost; }
+  function getMySocketId(){ return _socket ? _socket.id : null; }
   function getLevelIdx(){ return _levelIdx; }
   function getPartnerNickname(){ return _partnerNickname; }
   function isConnected(){ return _connected; }
@@ -1613,7 +1655,7 @@ const Multi = (() => {
   return {
     connect, createRoom, joinRoom,
     sendPress, sendRelease, sendReleaseCmd, sendFakeSignal, sendPlayerReady, sendPlayAgain,
-    setOnRoundResult, getRoomCode, getIsHost, getLevelIdx, getPartnerNickname, isConnected
+    setOnRoundResult, getRoomCode, getIsHost, getMySocketId, getLevelIdx, getPartnerNickname, isConnected
   };
 })();
 const Particles=(()=>{
@@ -1764,7 +1806,25 @@ const App=(()=>{
   }
   _loadCustomTexts();
 
-  function goStudio(){_buildStudio();_show('studio');}
+  function _getMyVoiceId(){
+    let id = localStorage.getItem('syncbomb_voice_id');
+    if(!id){
+      // 生成唯一ID：时间戳+随机，转成短码
+      const ts = Date.now().toString(36).slice(-4);
+      const rd = Math.random().toString(36).slice(2,6);
+      id = (ts+rd).toUpperCase();
+      localStorage.setItem('syncbomb_voice_id', id);
+    }
+    return id;
+  }
+
+  function goStudio(){
+    _buildStudio();
+    // 显示自动生成的声音码
+    const idEl = _el('sync-my-id');
+    if(idEl) idEl.textContent = _getMyVoiceId();
+    _show('studio');
+  }
 
   function _buildStudio(){
     const origTexts=_allCandyTexts();
@@ -2145,11 +2205,7 @@ const App=(()=>{
   }
 
   async function uploadVoice(){
-    const coupleId=(_el('sync-my-id').value||'').trim();
-    if(!coupleId){_syncStatus('请先设置一个情侣码','err');return;}
-    if(!/^[a-zA-Z0-9\u4e00-\u9fa5_-]{2,20}$/.test(coupleId)){
-      _syncStatus('情侣码只能用字母、数字、中文，2-20个字符','err');return;
-    }
+    const coupleId = _getMyVoiceId(); // 使用自动生成的唯一ID
     const recCount=Voice.getRecordedCount();
     if(recCount===0){_syncStatus('还没有录音哦，先录几条再上传','err');return;}
     _syncStatus('上传中…','loading');
@@ -2169,8 +2225,7 @@ const App=(()=>{
       });
       const data=await resp.json();
       if(data.ok){
-        _syncStatus(`✓ 上传成功！把情侣码「${coupleId}」发给TA，让TA导入`,'ok');
-        // 保存自己的coupleId
+        _syncStatus(`✓ 上传成功！把声音码「${coupleId}」发给TA，让TA导入`,'ok');
         localStorage.setItem('syncbomb_my_couple_id',coupleId);
       } else {
         _syncStatus('上传失败：'+data.msg,'err');
