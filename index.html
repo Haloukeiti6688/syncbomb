@@ -89,7 +89,48 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .sync-status.err{color:var(--red)}
 .sync-status.loading{color:var(--text3)}
 
-/* ── ROUND TABLE ── */
+/* ── LOBBY ── */
+.lobby-wrap{flex:1;display:flex;flex-direction:column;overflow-y:auto;padding:80px 24px 32px;-webkit-overflow-scrolling:touch}
+.lobby-wrap::-webkit-scrollbar{display:none}
+.lobby-hero{text-align:center;margin-bottom:28px}
+.lobby-emoji{font-size:56px;margin-bottom:10px;animation:floatbomb 4s ease-in-out infinite}
+.lobby-title{font-size:26px;font-weight:800;background:linear-gradient(135deg,var(--gold),var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:5px}
+.lobby-sub{font-size:14px;color:var(--text2)}
+.lobby-section{display:flex;flex-direction:column;gap:0}
+.lobby-level-row{display:flex;align-items:center;gap:8px;background:var(--surface);border-radius:var(--r);padding:12px 14px;margin-bottom:14px;border:1px solid var(--border)}
+.lobby-level-label{font-size:11px;color:var(--text3);flex-shrink:0}
+.lobby-level-name{flex:1;font-size:13px;font-weight:500;color:var(--text)}
+.lobby-level-btn{font-size:12px;color:var(--pink);background:transparent;border:none;cursor:pointer;flex-shrink:0}
+.lobby-or{text-align:center;font-size:12px;color:var(--text3);margin:14px 0}
+.lobby-join-wrap{display:flex;flex-direction:column;gap:0}
+.lobby-code-input{width:100%;background:var(--surface);border:1.5px solid var(--border2);border-radius:var(--r);padding:14px;font-size:22px;font-weight:700;color:var(--text);text-align:center;letter-spacing:8px;font-family:var(--font);outline:none;margin-bottom:0}
+.lobby-code-input:focus{border-color:var(--pink)}
+.lobby-room-code-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);padding:24px;text-align:center;margin-bottom:20px}
+.lobby-code-label{font-size:12px;color:var(--text3);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em}
+.lobby-room-code{font-size:48px;font-weight:900;letter-spacing:10px;background:linear-gradient(135deg,var(--gold),var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:12px}
+.lobby-copy-btn{background:rgba(255,110,180,.15);color:var(--pink);border:1px solid rgba(255,110,180,.3);border-radius:100px;padding:8px 20px;font-size:13px;font-weight:500;cursor:pointer;margin-bottom:8px}
+.lobby-share-hint{font-size:12px;color:var(--text3)}
+.lobby-waiting-anim{display:flex;gap:8px;justify-content:center;margin:20px 0 8px}
+.waiting-dot{width:10px;height:10px;border-radius:50%;background:var(--pink);animation:waiting-bounce 1.2s ease infinite}
+.waiting-dot:nth-child(2){animation-delay:.2s}
+.waiting-dot:nth-child(3){animation-delay:.4s}
+@keyframes waiting-bounce{0%,80%,100%{transform:scale(.8);opacity:.5}40%{transform:scale(1.2);opacity:1}}
+.lobby-waiting-text{text-align:center;font-size:14px;color:var(--text2)}
+.lobby-players{display:flex;align-items:center;gap:16px;justify-content:center;margin-bottom:16px}
+.lobby-player{text-align:center;flex:1}
+.lobby-player-avatar{font-size:40px;margin-bottom:6px}
+.lobby-player-name{font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px}
+.lobby-player-status{font-size:12px;padding:3px 10px;border-radius:100px;display:inline-block}
+.lobby-player-status.ready{background:rgba(74,222,128,.15);color:var(--green)}
+.lobby-vs{font-size:18px;font-weight:800;color:var(--text3);flex-shrink:0}
+.lobby-ready-tip{font-size:12px;color:var(--text3);text-align:center;margin-bottom:14px}
+.lobby-error{background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);border-radius:var(--r);padding:12px 14px;font-size:13px;color:var(--red);text-align:center;margin-top:12px;line-height:1.6}
+
+/* 联机游戏中双人实时面板增强 */
+.multi-badge{position:absolute;top:8px;right:8px;background:rgba(74,222,128,.2);color:var(--green);font-size:10px;font-weight:600;padding:2px 8px;border-radius:100px;border:1px solid rgba(74,222,128,.3)}
+.conn-status{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3);padding:4px 10px;background:var(--surface);border-radius:100px;margin-bottom:8px;width:fit-content;margin-left:auto;margin-right:auto}
+.conn-dot{width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0}
+.conn-dot.disconnected{background:var(--red);animation:none}
 .round-table-header{display:flex;align-items:center;gap:6px;margin-bottom:6px;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;padding:0 2px}
 .round-row{display:flex;align-items:center;gap:6px;padding:8px 6px;border-radius:var(--rsm);margin-bottom:4px;background:var(--surface2)}
 .rr-num{width:18px;font-size:11px;color:var(--text3);text-align:center;flex-shrink:0}
@@ -353,6 +394,77 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 </head>
 <body>
 
+<!-- lobby 联机大厅 -->
+<div class="screen" id="s-lobby">
+  <div class="lobby-wrap">
+    <button class="back-btn floating-back" onclick="App.goHome()">←</button>
+    <div class="lobby-hero">
+      <div class="lobby-emoji" id="lobby-emoji">💣</div>
+      <div class="lobby-title" id="lobby-title">双人联机</div>
+      <div class="lobby-sub" id="lobby-sub">两颗心，同一个节奏</div>
+    </div>
+
+    <!-- 未连接：选择创建或加入 -->
+    <div class="lobby-section" id="lobby-choose">
+      <div class="lobby-level-row">
+        <div class="lobby-level-label">选择关卡</div>
+        <div class="lobby-level-name" id="lobby-level-name">第1关 · 第一次握手</div>
+        <button class="lobby-level-btn" onclick="App.goHome()">更换 ›</button>
+      </div>
+      <button class="main-btn" onclick="App.createRoom()" style="margin-bottom:10px">
+        💕 创建房间（我来邀请对象）
+      </button>
+      <div class="lobby-or">— 或者 —</div>
+      <div class="lobby-join-wrap">
+        <input class="lobby-code-input" id="lobby-join-code" placeholder="输入对方的6位房间码" maxlength="6" type="number">
+        <button class="main-btn" onclick="App.joinRoom()" style="margin-top:8px">
+          🔑 加入房间
+        </button>
+      </div>
+    </div>
+
+    <!-- 已创建：等待对方加入 -->
+    <div class="lobby-section" id="lobby-waiting" style="display:none">
+      <div class="lobby-room-code-wrap">
+        <div class="lobby-code-label">你的房间码</div>
+        <div class="lobby-room-code" id="lobby-room-code">------</div>
+        <button class="lobby-copy-btn" id="lobby-copy-btn" onclick="App.copyRoomCode()">复制房间码</button>
+        <div class="lobby-share-hint">把房间码发给对象，等TA加入</div>
+      </div>
+      <div class="lobby-waiting-anim">
+        <div class="waiting-dot"></div>
+        <div class="waiting-dot"></div>
+        <div class="waiting-dot"></div>
+      </div>
+      <div class="lobby-waiting-text">等待对方加入…</div>
+    </div>
+
+    <!-- 双方已就绪 -->
+    <div class="lobby-section" id="lobby-ready" style="display:none">
+      <div class="lobby-players">
+        <div class="lobby-player">
+          <div class="lobby-player-avatar">🙋</div>
+          <div class="lobby-player-name" id="lobby-p1-name">你</div>
+          <div class="lobby-player-status ready">已就绪</div>
+        </div>
+        <div class="lobby-vs">VS</div>
+        <div class="lobby-player">
+          <div class="lobby-player-avatar">🌸</div>
+          <div class="lobby-player-name" id="lobby-p2-name">对方</div>
+          <div class="lobby-player-status ready">已就绪</div>
+        </div>
+      </div>
+      <div class="lobby-ready-tip">两人都进入游戏后自动开始</div>
+      <button class="main-btn" id="lobby-start-btn" onclick="App.startMultiGame()">
+        开始游戏 🎮
+      </button>
+    </div>
+
+    <!-- 错误提示 -->
+    <div class="lobby-error" id="lobby-error" style="display:none"></div>
+  </div>
+</div>
+
 <!-- splash -->
 <div class="screen active" id="s-splash">
   <div class="splash-wrap">
@@ -387,6 +499,9 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
   <div class="tab-bar">
     <button class="tab-item tab-item-active" onclick="App.continueGame()" id="tab-play">
       <span class="tab-icon">🎮</span><span class="tab-label" id="tab-play-label">继续挑战</span>
+    </button>
+    <button class="tab-item" onclick="App.goLobby()">
+      <span class="tab-icon">👫</span><span class="tab-label">联机对战</span>
     </button>
     <button class="tab-item" onclick="App.goStudio()">
       <span class="tab-icon">🎙️</span><span class="tab-label">录音室</span>
@@ -580,6 +695,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 <div class="screen-flash" id="screen-flash"></div>
 <div class="particles-layer" id="particles-layer"></div>
 
+<script src="http://101.35.214.253:3001/socket.io/socket.io.js"></script>
 <script>
 // ===================== DATA =====================
 const DATA = {
@@ -961,7 +1077,10 @@ const Game=(()=>{
   // dual panel timing
   let _youReleaseTime=0,_partnerReleaseTime=0;
 
-  function initLevel(idx){
+  let _multiMode = false;
+
+  function initLevel(idx, multiMode){
+    _multiMode = multiMode || false;
     _lvIdx=idx;_level=DATA.levels[idx];_round=0;_results=[];
     _bestDiff=Infinity;_perfStreak=0;_maxPerfStreak=0;
     _phase='idle';_held=false;
@@ -1032,6 +1151,8 @@ const Game=(()=>{
     e.preventDefault();
     if(_phase!=='idle'||_held)return;
     _held=true;_holdStart=Date.now();_phase='holding';
+    // 联机模式：发送按下事件
+    if(_multiMode) Multi.sendPress(Date.now());
     _el('game-arena').className='game-arena arena-holding';
     _el('arena-state-emoji').textContent='⏳';
     _el('arena-task').textContent='感受心跳，等待松手指令…';
@@ -1065,6 +1186,8 @@ const Game=(()=>{
       _fakeTimers.push(setTimeout(()=>{
         if(_phase!=='holding')return;
         FakeSignal.trigger(arena);
+        // 联机：房主广播假信号给对方
+        if(_multiMode && Multi.getIsHost()) Multi.sendFakeSignal('flash');
       },d));
     }
   }
@@ -1072,19 +1195,21 @@ const Game=(()=>{
   function _triggerRelease(){
     if(_phase!=='holding')return;
     _phase='release';_releaseCmd=Date.now();
+    // 联机：房主广播松手指令
+    if(_multiMode && Multi.getIsHost()) Multi.sendReleaseCmd();
     _el('game-arena').className='game-arena arena-release';
     _el('arena-state-emoji').textContent='🔔';
     _el('arena-task').textContent='现在！松手！';
     _el('arena-sub').textContent='';
     _setBtn('release');
-    // partner releases
-    _partnerReleaseTime=_releaseCmd+Math.max(-200,Math.min(200,_aiOffset));
-    const pDelay=Math.max(0,_aiOffset);
-    setTimeout(()=>{
-      _el('pp-partner').className='player-panel pp-partner released';
-      _setPanel('partner',null,'松开了','TA松手了',100,'var(--purple)');
-    },pDelay);
-    // timeout
+    if(!_multiMode){
+      _partnerReleaseTime=_releaseCmd+Math.max(-200,Math.min(200,_aiOffset));
+      const pDelay=Math.max(0,_aiOffset);
+      setTimeout(()=>{
+        _el('pp-partner').className='player-panel pp-partner released';
+        _setPanel('partner',null,'松开了','TA松手了',100,'var(--purple)');
+      },pDelay);
+    }
     _waitTimer=setTimeout(()=>{if(_held&&_phase==='release'){_held=false;_recordRound(888,false);}},1500);
   }
 
@@ -1093,6 +1218,24 @@ const Game=(()=>{
     if(!_held)return;
     _held=false;_clearTimers();
     const now=Date.now();
+    // 联机模式：发送松手时间戳，等服务器返回结果
+    if(_multiMode){
+      Multi.sendRelease(now);
+      if(_phase==='holding'){
+        _el('arena-state-emoji').textContent='😅';
+        _el('arena-task').textContent='哎呀，松太早啦～';
+        _setBtn('idle');_phase='idle';
+        _el('pp-you').className='player-panel pp-you released';
+        _setPanel('you',null,'太早了','早松了',100,'var(--red)');
+      } else if(_phase==='release'){
+        _phase='done';
+        _youReleaseTime=now;
+        _setBtn('done');
+        _el('pp-you').className='player-panel pp-you released';
+        _setPanel('you',null,'已松手','等待结果…',100,'var(--pink)');
+      }
+      return; // 等服务器回调 _onMultiRoundResult
+    }
     if(_phase==='holding'){
       _el('arena-state-emoji').textContent='😅';
       _el('arena-task').textContent='哎呀，松太早啦～';
@@ -1108,6 +1251,20 @@ const Game=(()=>{
     const diff=Math.abs(now-aiActual);
     const youFirst=now<aiActual;
     _recordRound(diff,youFirst);
+  }
+
+  // 联机模式：服务器返回本轮结果
+  function _onMultiRoundResult(result){
+    const me = result.p1.id === Multi.getIsHost() ? result.p1 : result.p2;
+    const partner = result.p1.id === Multi.getIsHost() ? result.p2 : result.p1;
+    const diff = result.diff;
+    const youFirst = me.timestamp < partner.timestamp;
+    _recordRound(diff, youFirst, partner.timestamp);
+  }
+
+  // 联机：收到松手信号
+  function _onReleaseSignal(){
+    _triggerRelease();
   }
 
   function _recordRound(diff,youFirst){
@@ -1199,10 +1356,205 @@ const Game=(()=>{
 
   function _clearTimers(){clearTimeout(_waitTimer);_fakeTimers.forEach(t=>clearTimeout(t));_fakeTimers=[];}
   function _el(id){return document.getElementById(id);}
-  return{initLevel,onPress,onRelease,getResults};
+  return{initLevel,onPress,onRelease,getResults,_onMultiRoundResult,_onReleaseSignal};
 })();
 
-// ===================== PARTICLES =====================
+// ===================== MULTI 联机模块 =====================
+const Multi = (() => {
+  const SERVER = 'http://101.35.214.253:3001';
+  let _socket = null;
+  let _roomCode = '';
+  let _isHost = false;
+  let _myNickname = '我';
+  let _partnerNickname = '另一半';
+  let _levelIdx = 0;
+  let _connected = false;
+  let _releaseCmd = 0;
+  let _myReleaseTime = 0;
+  let _partnerReleaseTime = 0;
+  let _onRoundResult = null; // 回调
+  let _roundStarted = false;
+
+  function _el(id){ return document.getElementById(id); }
+
+  function connect(){
+    if(_socket && _socket.connected) return;
+    _socket = io(SERVER, { transports:['websocket','polling'] });
+
+    _socket.on('connect', ()=>{
+      _connected = true;
+      console.log('WebSocket已连接');
+      _updateConnStatus(true);
+    });
+
+    _socket.on('disconnect', ()=>{
+      _connected = false;
+      _updateConnStatus(false);
+    });
+
+    // 房间创建成功
+    _socket.on('room_created', ({ code })=>{
+      _roomCode = code;
+      _isHost = true;
+      _el('lobby-room-code').textContent = code;
+      _el('lobby-choose').style.display = 'none';
+      _el('lobby-waiting').style.display = 'flex';
+      _el('lobby-waiting').style.flexDirection = 'column';
+    });
+
+    // 加入成功，双方都到了
+    _socket.on('room_ready', ({ players, levelIdx })=>{
+      _levelIdx = levelIdx;
+      const me = _socket.id;
+      const partner = players.find(p => p.id !== me);
+      if(partner) _partnerNickname = partner.nickname;
+      // 更新UI
+      _el('lobby-p1-name').textContent = '你';
+      _el('lobby-p2-name').textContent = _partnerNickname;
+      _el('lobby-waiting').style.display = 'none';
+      _el('lobby-choose').style.display = 'none';
+      _el('lobby-ready').style.display = 'flex';
+      _el('lobby-ready').style.flexDirection = 'column';
+      // 非房主也可以看到开始按钮
+      if(!_isHost){
+        _el('lobby-start-btn').textContent = '进入游戏 🎮';
+      }
+    });
+
+    // 加入失败
+    _socket.on('join_error', ({ msg })=>{
+      _showLobbyError(msg);
+    });
+
+    // 关卡变化（房主改了关卡）
+    _socket.on('level_changed', ({ levelIdx })=>{
+      _levelIdx = levelIdx;
+    });
+
+    // 松手指令（服务器广播）
+    _socket.on('release_signal', ({ timestamp })=>{
+      _releaseCmd = timestamp;
+      // 触发游戏松手指令动画
+      if(Game._onReleaseSignal) Game._onReleaseSignal();
+    });
+
+    // 对方按下了
+    _socket.on('partner_press', ({ timestamp })=>{
+      _el('pp-partner').className = 'player-panel pp-partner holding';
+      _setPartnerPanel('按住中', '✓ TA已按住', 60, 'var(--green)');
+    });
+
+    // 对方松手了
+    _socket.on('partner_release', ({ timestamp })=>{
+      _partnerReleaseTime = timestamp;
+      _el('pp-partner').className = 'player-panel pp-partner released';
+      _setPartnerPanel('松手了', 'TA已松手', 100, 'var(--purple)');
+    });
+
+    // 服务器计算出这轮结果
+    _socket.on('round_result', (result)=>{
+      if(_onRoundResult) _onRoundResult(result);
+    });
+
+    // 假信号（对方也收到同样的假信号）
+    _socket.on('fake_signal', ({ type })=>{
+      FakeSignal.trigger(_el('game-arena'), type);
+    });
+
+    // 对方断线
+    _socket.on('partner_disconnected', ({ nickname })=>{
+      alert(`${nickname || '对方'}断线了，游戏暂停`);
+    });
+
+    // 再来一局
+    _socket.on('partner_wants_again', ()=>{
+      _el('lobby-sub').textContent = 'TA想再来一局！';
+    });
+    _socket.on('game_restart', ()=>{
+      App.goLobby();
+    });
+  }
+
+  function _updateConnStatus(connected){
+    const dots = document.querySelectorAll('.conn-dot');
+    dots.forEach(d => d.classList.toggle('disconnected', !connected));
+  }
+
+  function _setPartnerPanel(ms, status, barPct, barColor){
+    _el('pp-partner-ms').textContent = ms;
+    _el('pp-partner-status').textContent = status;
+    _el('pp-partner-bar').style.width = barPct + '%';
+    _el('pp-partner-bar').style.background = barColor;
+  }
+
+  function _showLobbyError(msg){
+    const el = _el('lobby-error');
+    if(el){ el.textContent = msg; el.style.display = 'block'; }
+  }
+
+  function createRoom(levelIdx, nickname){
+    _levelIdx = levelIdx;
+    _myNickname = nickname || '我';
+    _isHost = true;
+    if(!_connected) connect();
+    setTimeout(()=>{
+      _socket.emit('create_room', { levelIdx, nickname: _myNickname });
+    }, _connected ? 0 : 1000);
+  }
+
+  function joinRoom(code, nickname){
+    _myNickname = nickname || '我';
+    _isHost = false;
+    if(!_connected) connect();
+    setTimeout(()=>{
+      _socket.emit('join_room', { code, nickname: _myNickname });
+    }, _connected ? 0 : 1000);
+  }
+
+  function sendPress(timestamp){
+    if(_socket) _socket.emit('press', { code: _roomCode, timestamp });
+  }
+
+  function sendRelease(timestamp){
+    _myReleaseTime = timestamp;
+    if(_socket) _socket.emit('release', { code: _roomCode, timestamp });
+  }
+
+  function sendReleaseCmd(){
+    const timestamp = Date.now();
+    _releaseCmd = timestamp;
+    if(_isHost && _socket){
+      _socket.emit('release_cmd', { code: _roomCode, timestamp });
+    }
+  }
+
+  function sendFakeSignal(type){
+    if(_isHost && _socket){
+      _socket.emit('fake_signal', { code: _roomCode, type });
+    }
+  }
+
+  function sendPlayerReady(){
+    if(_socket) _socket.emit('player_ready', { code: _roomCode });
+  }
+
+  function sendPlayAgain(){
+    if(_socket) _socket.emit('play_again', { code: _roomCode });
+  }
+
+  function setOnRoundResult(cb){ _onRoundResult = cb; }
+  function getRoomCode(){ return _roomCode; }
+  function getIsHost(){ return _isHost; }
+  function getLevelIdx(){ return _levelIdx; }
+  function getPartnerNickname(){ return _partnerNickname; }
+  function isConnected(){ return _connected; }
+
+  return {
+    connect, createRoom, joinRoom,
+    sendPress, sendRelease, sendReleaseCmd, sendFakeSignal, sendPlayerReady, sendPlayAgain,
+    setOnRoundResult, getRoomCode, getIsHost, getLevelIdx, getPartnerNickname, isConnected
+  };
+})();
 const Particles=(()=>{
   const MAP={perfect:['💕','✨','🌟','💫','🌸','💖'],good:['🌸','💓','✨','🍬'],close:['💌','🌷'],fail:['💣','😅','💥']};
   function burst(grade){
@@ -1234,7 +1586,88 @@ const App=(()=>{
   function _el(id){return document.getElementById(id);}
   function _show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));_el('s-'+id).classList.add('active');}
 
-  // ── 录音室 ──
+  // ── 联机大厅 ──
+  let _multiMode = false; // 是否联机模式
+
+  function goLobby(){
+    const s = Store.get();
+    const lvl = DATA.levels[s.currentLevelIdx];
+    _el('lobby-level-name').textContent = `第${s.currentLevelIdx+1}关 · ${lvl.name}`;
+    // 重置大厅状态
+    _el('lobby-choose').style.display = 'flex';
+    _el('lobby-choose').style.flexDirection = 'column';
+    _el('lobby-waiting').style.display = 'none';
+    _el('lobby-ready').style.display = 'none';
+    _el('lobby-error').style.display = 'none';
+    _el('lobby-join-code').value = '';
+    // 连接服务器
+    Multi.connect();
+    _show('lobby');
+  }
+
+  function createRoom(){
+    _el('lobby-error').style.display = 'none';
+    const s = Store.get();
+    Multi.createRoom(s.currentLevelIdx, '我');
+  }
+
+  function joinRoom(){
+    const code = (_el('lobby-join-code').value || '').trim();
+    if(code.length !== 6 || isNaN(code)){
+      _el('lobby-error').textContent = '请输入6位数字房间码';
+      _el('lobby-error').style.display = 'block';
+      return;
+    }
+    _el('lobby-error').style.display = 'none';
+    Multi.joinRoom(code, '我');
+  }
+
+  function copyRoomCode(){
+    const code = Multi.getRoomCode();
+    if(!code) return;
+    // 生成带房间码的链接
+    const link = `${location.href.split('?')[0]}?room=${code}`;
+    if(navigator.clipboard){
+      navigator.clipboard.writeText(`我在玩同步炸弹，快来和我联机！房间码：${code}\n${link}`);
+    } else {
+      // 降级方案
+      const ta = document.createElement('textarea');
+      ta.value = `房间码：${code}`;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
+    const btn = _el('lobby-copy-btn');
+    btn.textContent = '✓ 已复制！发给对象吧';
+    setTimeout(()=>{ btn.textContent = '复制房间码'; }, 2000);
+  }
+
+  function startMultiGame(){
+    _multiMode = true;
+    const lvlIdx = Multi.getLevelIdx();
+    Store.setCurrentLevel(lvlIdx);
+    // 设置联机回调
+    Multi.setOnRoundResult((result)=>{
+      Game._onMultiRoundResult(result);
+    });
+    Multi.sendPlayerReady();
+    Game.initLevel(lvlIdx, true); // true=联机模式
+    // 在游戏界面加联机标识
+    _show('game');
+    // 加连接状态显示
+    const hud = _el('game-hud');
+    if(hud && !_el('conn-status-bar')){
+      const bar = document.createElement('div');
+      bar.id = 'conn-status-bar';
+      bar.className = 'conn-status';
+      bar.innerHTML = '<div class="conn-dot"></div><span>联机对战中</span>';
+      hud.insertAdjacentElement('afterend', bar);
+    }
+  }
+
+  function isMultiMode(){ return _multiMode; }
+  function exitMultiMode(){ _multiMode = false; }
   let _recorder=null,_recChunks=[],_recTargetIdx=-1,_recStream=null;
 
   // 所有需要录制的文案（从DATA.candy里提取纯文本）
@@ -1707,11 +2140,26 @@ const App=(()=>{
     }
   }
 
-  return{initSplash,goHome,goChapter,goPreGame,startGame,continueGame,showResult,goProfile,goStudio,openSettings,closeSettings,setVoice,setRate,setVibration,startRec,stopRec,playRec,deleteRec,clearAllRecordings,toggleEdit,closeEdit,saveCustomText,resetCustomText,_getDisplayText,uploadVoice,downloadVoice};
+  return{initSplash,goHome,goChapter,goPreGame,startGame,continueGame,showResult,goProfile,goStudio,goLobby,createRoom,joinRoom,startMultiGame,copyRoomCode,openSettings,closeSettings,setVoice,setRate,setVibration,startRec,stopRec,playRec,deleteRec,clearAllRecordings,toggleEdit,closeEdit,saveCustomText,resetCustomText,_getDisplayText,uploadVoice,downloadVoice,isMultiMode,exitMultiMode};
 })();
 
 // ===================== INIT =====================
 App.initSplash();
+// 检测URL里的room参数，自动加入房间
+(function checkRoomFromURL(){
+  const params = new URLSearchParams(location.search);
+  const room = params.get('room');
+  if(room && /^\d{6}$/.test(room)){
+    // 延迟一下等页面加载完
+    setTimeout(()=>{
+      App.goLobby();
+      setTimeout(()=>{
+        const input = document.getElementById('lobby-join-code');
+        if(input){ input.value = room; App.joinRoom(); }
+      }, 500);
+    }, 300);
+  }
+})();
 </script>
 </body>
 </html>
