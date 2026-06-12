@@ -702,20 +702,17 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
   <div class="modal-sheet" onclick="event.stopPropagation()">
     <div class="modal-title">⚙️ 游戏设置</div>
     <div class="setting-row">
-      <div class="setting-label">语音朗读<small>结果文案自动播报</small></div>
+      <div class="setting-label">语音播报
+        <small>游戏结果文案朗读</small>
+      </div>
       <div class="seg-ctrl" id="voice-ctrl">
-        <button class="seg-btn active" data-voice="female" onclick="App.setVoice('female')">女声</button>
-        <button class="seg-btn" data-voice="male" onclick="App.setVoice('male')">男声</button>
-        <button class="seg-btn" data-voice="recorded" onclick="App.setVoice('recorded')">真声🎙️</button>
-        <button class="seg-btn" data-voice="off" onclick="App.setVoice('off')">关闭</button>
+        <button class="seg-btn" data-voice="recorded" onclick="App.setVoice('recorded')">🎙️ 真声</button>
+        <button class="seg-btn active" data-voice="off" onclick="App.setVoice('off')">🔇 关闭</button>
       </div>
     </div>
-    <div class="setting-row">
-      <div class="setting-label">语速<small>朗读速度</small></div>
-      <div class="slider-wrap">
-        <span style="font-size:11px;color:var(--text3)">慢</span>
-        <input type="range" id="rate-slider" min="0.5" max="1.8" step="0.1" value="1.0" oninput="App.setRate(this.value)">
-        <span style="font-size:11px;color:var(--text3)">快</span>
+    <div class="setting-row" id="voice-tip-row" style="padding:8px 14px">
+      <div style="font-size:12px;color:var(--text3);line-height:1.65">
+        💡 在<strong style="color:var(--text2)">录音室</strong>录制好声音后，开启真声模式，游戏里就会播放你录的声音
       </div>
     </div>
     <div class="setting-row">
@@ -911,18 +908,8 @@ const Store=(()=>{
 
 // ===================== VOICE =====================
 const Voice=(()=>{
-  let _mode='female'; // female | male | off | recorded
-  let _rate=1.0;
-  let _synth=window.speechSynthesis||null;
-  let _voices=[];
-  // 录音库：key=文案hash，value=base64 audio
+  let _mode='off'; // recorded | off
   let _recordings={};
-
-  if(_synth){
-    const load=()=>{_voices=_synth.getVoices();};
-    load();
-    if(_synth.onvoiceschanged!==undefined)_synth.onvoiceschanged=load;
-  }
 
   // 清洗文字：去掉emoji、符号，只保留中文和基础标点节奏
   function _clean(text){
@@ -940,25 +927,11 @@ const Voice=(()=>{
       .trim();
   }
 
-  function _pickVoice(){
-    if(!_synth||_mode==='off'||_mode==='recorded')return null;
-    const zhVoices=_voices.filter(v=>v.lang.startsWith('zh')||v.lang.startsWith('cmn')||v.lang==='zh-CN'||v.lang==='zh-TW');
-    const pool=zhVoices.length>0?zhVoices:_voices;
-    if(pool.length===0)return null;
-    if(_mode==='female'){
-      // 优先找女声关键词
-      return pool.find(v=>/female|woman|girl|Ting|Tingting|Meijia|Hanhan|Shanshan|Xiaoyan|Huihui|Yaoyao|Xiaoqi|Xiaoxiao|Xiaomo|Yunxi/i.test(v.name))
-        || pool.find(v=>!(/male|man|boy|Kangkang|Zhiwei|Yunyang/i.test(v.name)))
-        || pool[0];
-    } else {
-      return pool.find(v=>/male|man|boy|Kangkang|Zhiwei|Yunyang/i.test(v.name))||pool[pool.length-1];
-    }
-  }
-
-  // speak返回Promise，resolved时语音已播完
+  // speak：只走录音播放，不走TTS
   function speak(rawText){
     return new Promise(resolve=>{
-      // 优先播放录音（无论当前mode，有录音就播）
+      if(_mode==='off'){ resolve(); return; }
+      // recorded模式：播放录音
       if(_mode==='recorded'){
         const rec=getRecording(rawText);
         if(rec){
@@ -968,25 +941,9 @@ const Voice=(()=>{
           audio.play().catch(resolve);
           return;
         }
-        // 没有这条录音：fallback到TTS女声
       }
-      if(!_synth||_mode==='off'||_mode==='recorded'&&!getRecording(rawText)){
-        if(_mode==='off'){resolve();return;}
-      }
-      if(!_synth){resolve();return;}
-      _synth.cancel();
-      const cleaned=_clean(rawText);
-      if(!cleaned){resolve();return;}
-      const u=new SpeechSynthesisUtterance(cleaned);
-      const v=_pickVoice();
-      if(v)u.voice=v;
-      u.rate=_mode==='female'?Math.min(_rate,0.9):_rate;
-      u.pitch=_mode==='female'?1.45:0.85;
-      u.volume=1;
-      u.onend=resolve;
-      u.onerror=resolve;
-      _synth.speak(u);
-      setTimeout(resolve,5000);
+      // 没有录音或未设置：静默resolve
+      resolve();
     });
   }
 
@@ -1030,10 +987,9 @@ const Voice=(()=>{
   function clearRecordings(){_recordings={};_persist();}
 
   function setMode(m){_mode=m;}
-  function setRate(r){_rate=parseFloat(r);}
   function getMode(){return _mode;}
-  function getRate(){return _rate;}
-  function cancel(){if(_synth)_synth.cancel();}
+  function getMode(){return _mode;}
+  function cancel(){}
 
   loadRecordings();
   // 直接按key导入录音（用于云端下载）
@@ -1043,7 +999,7 @@ const Voice=(()=>{
     _persist();
   }
 
-  return{speak,setMode,setRate,getMode,getRate,cancel,saveRecording,hasRecording,getRecording,getRecordedCount,clearRecordings,playRecording,_clean,_recKey,_importRecording};
+  return{speak,setMode,getMode,cancel,saveRecording,hasRecording,getRecording,getRecordedCount,clearRecordings,playRecording,_clean,_recKey,_importRecording};
 })();
 
 // ===================== FAKE SIGNALS =====================
@@ -2110,7 +2066,6 @@ const App=(()=>{
     const mode=Voice.getMode();
     document.querySelectorAll('#voice-ctrl .seg-btn').forEach(b=>b.classList.remove('active'));
     document.querySelector(`#voice-ctrl .seg-btn[onclick*="${mode}"]`)?.classList.add('active');
-    _el('rate-slider').value=Voice.getRate();
   }
   function closeSettings(e){if(!e||e.target===_el('settings-modal'))_el('settings-modal').classList.remove('open');}
   function setVoice(m){
@@ -2120,13 +2075,22 @@ const App=(()=>{
     });
     if(m==='recorded'){
       const cnt=Voice.getRecordedCount();
-      if(cnt===0){alert('还没有录音哦～先去录音室录制吧！');}
-      else{Voice.speak('设置成功，现在是真声模式');}
-    } else if(m!=='off'){
-      Voice.speak('设置完成，声音就像这样哦');
+      if(cnt===0){
+        // 没有录音，提示去录音室
+        alert('还没有录音哦～点击下方「录音室」录制你的声音吧！');
+        // 自动切回关闭
+        Voice.setMode('off');
+        document.querySelectorAll('#voice-ctrl .seg-btn').forEach(b=>{
+          b.classList.toggle('active', b.dataset.voice==='off');
+        });
+      } else {
+        // 试播一条
+        const texts=_allCandyTexts();
+        const hasRec=texts.find(t=>Voice.hasRecording(t));
+        if(hasRec) Voice.playRecording(hasRec);
+      }
     }
   }
-  function setRate(v){Voice.setRate(v);}
   function setVibration(on){
     document.querySelectorAll('#vib-ctrl .seg-btn').forEach(b=>b.classList.remove('active'));
     document.querySelector(`#vib-ctrl .seg-btn[onclick*="${on}"]`)?.classList.add('active');
@@ -2228,7 +2192,7 @@ const App=(()=>{
     }
   }
 
-  return{initSplash,goHome,goChapter,goPreGame,startGame,continueGame,showResult,showShareCard,goProfile,goStudio,goLobby,createRoom,joinRoom,startMultiGame,copyRoomCode,openSettings,closeSettings,setVoice,setRate,setVibration,startRec,stopRec,playRec,deleteRec,clearAllRecordings,toggleEdit,closeEdit,saveCustomText,resetCustomText,_getDisplayText,uploadVoice,downloadVoice,isMultiMode,exitMultiMode};
+  return{initSplash,goHome,goChapter,goPreGame,startGame,continueGame,showResult,showShareCard,goProfile,goStudio,goLobby,createRoom,joinRoom,startMultiGame,copyRoomCode,openSettings,closeSettings,setVoice,setVibration,startRec,stopRec,playRec,deleteRec,clearAllRecordings,toggleEdit,closeEdit,saveCustomText,resetCustomText,_getDisplayText,uploadVoice,downloadVoice,isMultiMode,exitMultiMode};
 })();
 
 // ===================== SHARE CARD 战报分享 =====================
