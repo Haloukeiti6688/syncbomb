@@ -716,13 +716,12 @@ const Voice=(()=>{
     }
   }
 
-  // speak返回Promise，resolved时语音已播完（或关闭时立即resolve）
+  // speak返回Promise，resolved时语音已播完
   function speak(rawText){
     return new Promise(resolve=>{
-      // 优先播放录音
+      // 优先播放录音（无论当前mode，有录音就播）
       if(_mode==='recorded'){
-        const key=_hashText(rawText);
-        const rec=_recordings[key];
+        const rec=getRecording(rawText);
         if(rec){
           const audio=new Audio(rec);
           audio.onended=resolve;
@@ -730,23 +729,24 @@ const Voice=(()=>{
           audio.play().catch(resolve);
           return;
         }
-        // 没有录音就fallback到女声TTS
+        // 没有这条录音：fallback到TTS女声
       }
-      if(!_synth||_mode==='off'){resolve();return;}
+      if(!_synth||_mode==='off'||_mode==='recorded'&&!getRecording(rawText)){
+        if(_mode==='off'){resolve();return;}
+      }
+      if(!_synth){resolve();return;}
       _synth.cancel();
       const cleaned=_clean(rawText);
       if(!cleaned){resolve();return;}
       const u=new SpeechSynthesisUtterance(cleaned);
       const v=_pickVoice();
       if(v)u.voice=v;
-      // 撒娇语气：女声高pitch慢速，男声低沉
       u.rate=_mode==='female'?Math.min(_rate,0.9):_rate;
       u.pitch=_mode==='female'?1.45:0.85;
       u.volume=1;
       u.onend=resolve;
       u.onerror=resolve;
       _synth.speak(u);
-      // 保险：5秒超时防止onend不触发（iOS偶发bug）
       setTimeout(resolve,5000);
     });
   }
@@ -757,18 +757,30 @@ const Voice=(()=>{
     return 'r'+Math.abs(h);
   }
 
-  function saveRecording(rawText,base64Audio){
-    const key=_hashText(rawText);
-    if(base64Audio===null){
-      delete _recordings[key];
-    } else {
-      _recordings[key]=base64Audio;
-    }
+  // ── 录音存储：统一用 _clean(text) 做 key，避免emoji/符号差异 ──
+  function _recKey(rawText){ return 'rk_'+_hashText(_clean(rawText)||rawText); }
+
+  function saveRecording(rawText, base64Audio){
+    const key=_recKey(rawText);
+    if(base64Audio===null){ delete _recordings[key]; }
+    else { _recordings[key]=base64Audio; }
     _persist();
   }
+  function hasRecording(rawText){ return !!_recordings[_recKey(rawText)]; }
+  function getRecording(rawText){ return _recordings[_recKey(rawText)]||null; }
+  function getRecordedCount(){ return Object.keys(_recordings).length; }
 
-  function hasRecording(rawText){return !!_recordings[_hashText(rawText)];}
-  function getRecordedCount(){return Object.keys(_recordings).length;}
+  // 直接播放某条录音（不走TTS），返回Promise
+  function playRecording(rawText){
+    return new Promise(resolve=>{
+      const rec=getRecording(rawText);
+      if(!rec){resolve();return;}
+      const audio=new Audio(rec);
+      audio.onended=resolve;
+      audio.onerror=resolve;
+      audio.play().catch(resolve);
+    });
+  }
 
   function _persist(){
     try{localStorage.setItem('syncbomb_voice_recs',JSON.stringify(_recordings));}catch(e){}
@@ -785,7 +797,7 @@ const Voice=(()=>{
   function cancel(){if(_synth)_synth.cancel();}
 
   loadRecordings();
-  return{speak,setMode,setRate,getMode,getRate,cancel,saveRecording,hasRecording,getRecordedCount,clearRecordings,_clean};
+  return{speak,setMode,setRate,getMode,getRate,cancel,saveRecording,hasRecording,getRecording,getRecordedCount,clearRecordings,playRecording,_clean};
 })();
 
 // ===================== FAKE SIGNALS =====================
@@ -1076,7 +1088,7 @@ const Game=(()=>{
       _setPanel('partner',null,pReal?pReal+'ms':'—',pReal&&pReal<realDiff?'TA更准 💜':'',pReal?Math.max(5,100-pReal/t*80):30,'var(--purple)');
       if(pReal)_setMsColor('partner',pReal,t);
     }
-    if(_bestDiff<Infinity)_el('hud-best-val').textContent=_bestDiff+'ms';
+    if(_bestDiff<Infinity)_el('hud-best-val').textContent=_bestDiff.toFixed(4)+'ms';
     _updateDot(_round,grade);
     const candy=_showFeedback(realDiff,grade,youFirst);
     Particles.burst(grade);
@@ -1097,16 +1109,18 @@ const Game=(()=>{
   function _showFeedback(diff,grade,youFirst){
     const arr=DATA.candy[grade];
     const candy=arr[Math.floor(Math.random()*arr.length)];
+    // 如果用户自定义了这句文案，显示和播放都用自定义版
+    const displayCandy=App._getDisplayText?App._getDisplayText(candy):candy;
     const icon={perfect:'✨',good:'💕',close:'🌸',fail:'💣'}[grade];
-    const dText=diff!==null?`误差 ${diff}ms · ${youFirst?'你早了一点':'你晚了一点'}`:'';
+    const dText=diff!==null?`误差 ${diff.toFixed(0)}ms · ${youFirst?'你早了一点':'你晚了一点'}`:'';
     const hasRec=Voice.hasRecording(candy);
     const speakIcon=Voice.getMode()!=='off'?(hasRec?'🎙️':'🔊'):'';
-    _el('round-result').innerHTML=`<div class="candy-text">${icon} ${candy} <span style="font-size:11px;color:var(--purple);opacity:.7">${speakIcon}</span></div>${dText?`<div class="diff-text">${dText}</div>`:''}`;
+    _el('round-result').innerHTML=`<div class="candy-text">${icon} ${displayCandy} <span style="font-size:11px;color:var(--purple);opacity:.7">${speakIcon}</span></div>${dText?`<div class="diff-text">${dText}</div>`:''}`;
     _setBtn('done');_el('press-feedback').textContent='';
     _el('game-arena').className='game-arena arena-result';
     _el('arena-state-emoji').textContent={perfect:'🎆',good:'💓',close:'😅',fail:'💥'}[grade];
     _el('arena-task').textContent='';_el('arena-sub').textContent='';
-    return candy;
+    return candy; // 返回原文，speak内部会查录音key
   }
 
   function _setBtn(state){
@@ -1185,18 +1199,24 @@ const App=(()=>{
     return all;
   }
 
-  // 自定义文案存储（key=原文案hash，value=自定义文本）
+  // 自定义文案存储——key用稳定hash，不用slice截断（防止中文截断不一致）
   let _customTexts={};
   function _loadCustomTexts(){try{const r=localStorage.getItem('syncbomb_custom_texts');if(r)_customTexts=JSON.parse(r);}catch(e){}}
   function _saveCustomTexts(){try{localStorage.setItem('syncbomb_custom_texts',JSON.stringify(_customTexts));}catch(e){}}
+
+  function _ctKey(orig){
+    // 用原始文本的hashCode做key，稳定唯一
+    let h=0;
+    for(let i=0;i<orig.length;i++){h=(h<<5)-h+orig.charCodeAt(i);h|=0;}
+    return 'ct_'+Math.abs(h);
+  }
+
   function _getDisplayText(orig){
-    // hash用原文来查，但如果用户改过就显示自定义文案
-    const k='ct_'+orig.slice(0,20).replace(/\s/g,'');
-    return _customTexts[k]||orig;
+    return _customTexts[_ctKey(orig)]||orig;
   }
   function _setCustomText(orig,custom){
-    const k='ct_'+orig.slice(0,20).replace(/\s/g,'');
-    if(custom.trim()===''||custom.trim()===orig){delete _customTexts[k];}
+    const k=_ctKey(orig);
+    if(!custom||custom.trim()===''||custom.trim()===orig){delete _customTexts[k];}
     else{_customTexts[k]=custom.trim();}
     _saveCustomTexts();
   }
@@ -1297,20 +1317,26 @@ const App=(()=>{
     }
   }
 
-  function _finishRec(text,idx){
+  function _finishRec(origText,idx){
     const blob=new Blob(_recChunks,{type:'audio/webm'});
     const reader=new FileReader();
     reader.onloadend=()=>{
-      Voice.saveRecording(text,reader.result);
-      _buildStudio(); // 刷新列表
+      Voice.saveRecording(origText, reader.result);
+      _buildStudio();
     };
     reader.readAsDataURL(blob);
   }
 
   function playRec(origText,idx){
     Voice.cancel();
-    const displayText=_getDisplayText(origText);
-    Voice.speak(displayText);
+    // 直接播放录音文件，不走TTS
+    Voice.playRecording(origText).then(()=>{
+      // 没有录音时fallback：用TTS读显示文案
+      if(!Voice.hasRecording(origText)){
+        const displayText=_getDisplayText(origText);
+        Voice.speak(displayText);
+      }
+    });
   }
 
   function deleteRec(text,idx){
@@ -1402,9 +1428,10 @@ const App=(()=>{
     const newBadges=Store.get().unlockedBadges.filter(id=>!prev.includes(id)).map(id=>DATA.badges.find(b=>b.id===id)).filter(Boolean);
     if(r.passed)Particles.celebrate();
     const candy=_pickCandy(r);
+    const displayCandy=_getDisplayText(candy);
     const gi={3:{e:'🎆',t:'心有灵犀！'},2:{e:'💕',t:'非常接近！'},1:{e:'🌸',t:'初见成效~'},0:{e:'💣',t:'再试一次~'}}[r.finalStars];
     const starsStr='⭐'.repeat(r.finalStars)+'☆'.repeat(3-r.finalStars);
-    const bd=r.bestMs!==null?r.bestMs+'ms':'—';
+    const bd=r.bestMs!==null?r.bestMs.toFixed(4)+'ms':'—';
     const pct={perfect:Math.round(r.perfects/r.totalRounds*100),good:Math.round(r.goods/r.totalRounds*100),close:Math.round(r.closes/r.totalRounds*100),fail:Math.round(r.fails/r.totalRounds*100)};
     const hasNext=r.levelIdx+1<20;
     const unlockHtml=r.passed&&hasNext?`<div class="result-unlock"><div class="unlock-emoji">${DATA.levels[r.levelIdx+1].emoji}</div><div class="unlock-title">解锁新关卡：${DATA.levels[r.levelIdx+1].name}</div><div class="unlock-desc">${DATA.levels[r.levelIdx+1].desc}</div></div>`:'';
@@ -1412,10 +1439,9 @@ const App=(()=>{
 
     // ── 每轮详细对比表 ──
     const gradeIcon={perfect:'✨',good:'💕',close:'🌸',fail:'💣'};
-    const gradeLabel={perfect:'完美',good:'良好',close:'差一点',fail:'走火'};
     const roundRows=r.roundDetails.map((rd,i)=>{
-      const youMs=rd.diff!==null?rd.diff+'ms':'失误';
-      const taMs=rd.partnerDiff!==null?rd.partnerDiff+'ms':'—';
+      const youMs=rd.diff!==null?rd.diff.toFixed(4)+'ms':'失误';
+      const taMs=rd.partnerDiff!==null?rd.partnerDiff.toFixed(4)+'ms':'—';
       const youBetter=rd.diff!==null&&rd.partnerDiff!==null&&rd.diff<=rd.partnerDiff;
       const taBetter=rd.diff!==null&&rd.partnerDiff!==null&&rd.partnerDiff<rd.diff;
       return `<div class="round-row">
@@ -1443,8 +1469,8 @@ const App=(()=>{
         <div class="result-best-diff">${bd}</div>
         <div class="result-best-label">本关最小误差</div>
         <div class="result-candy" id="result-candy-box">
-          ${candy}
-          <button class="speak-btn" onclick="Voice.speak('${candy.replace(/'/g,"\\'")}')">🔊</button>
+          ${displayCandy}
+          <button class="speak-btn" onclick="Voice.speak('${candy.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')">🔊</button>
         </div>
       </div>
 
@@ -1472,7 +1498,7 @@ const App=(()=>{
         <button class="main-btn secondary" style="flex:1" onclick="App.goHome()">选关</button>
         <button class="main-btn" style="flex:2" onclick="${nextAction}">${nextText}</button>
       </div>`;
-    Voice.speak(candy);
+    Voice.speak(candy); // 用原文触发录音key匹配
     _show('result');
   }
 
@@ -1548,7 +1574,7 @@ const App=(()=>{
     }
   }
 
-  return{initSplash,goHome,goChapter,goPreGame,startGame,continueGame,showResult,goProfile,goStudio,openSettings,closeSettings,setVoice,setRate,setVibration,startRec,stopRec,playRec,deleteRec,clearAllRecordings,toggleEdit,closeEdit,saveCustomText,resetCustomText};
+  return{initSplash,goHome,goChapter,goPreGame,startGame,continueGame,showResult,goProfile,goStudio,openSettings,closeSettings,setVoice,setRate,setVibration,startRec,stopRec,playRec,deleteRec,clearAllRecordings,toggleEdit,closeEdit,saveCustomText,resetCustomText,_getDisplayText};
 })();
 
 // ===================== INIT =====================
