@@ -1494,6 +1494,22 @@ const Multi = (() => {
       _updateConnStatus(false);
     });
 
+    // 重连后重新加入房间（防止微信切后台导致socket.id变化）
+    _socket.on('reconnect', ()=>{
+      _connected = true;
+      _updateConnStatus(true);
+      if(_roomCode){
+        console.log('重连成功，重新加入房间', _roomCode);
+        _socket.emit('rejoin_room', { code: _roomCode, nickname: _myNickname });
+      }
+    });
+
+    // 重新加入房间成功
+    _socket.on('rejoin_success', ({ levelIdx })=>{
+      console.log('重新加入房间成功');
+      if(levelIdx !== undefined) _levelIdx = levelIdx;
+    });
+
     // 房间创建成功
     _socket.on('room_created', ({ code })=>{
       _roomCode = code;
@@ -1784,16 +1800,31 @@ const App=(()=>{
 
   // ── 联机模式：在房间内进入下一关 ──
   function multiNextLevel(levelIdx){
-    // 通知服务器切换关卡
     Multi.sendNextLevel(levelIdx);
-    // 显示等待搭档确认的UI
     _showMultiWaiting('等待搭档确认下一关…', levelIdx);
+    _startRestartTimeout();
   }
 
   function multiRetry(levelIdx){
     Multi.sendNextLevel(levelIdx);
     _showMultiWaiting('等待搭档再来一局…', levelIdx);
+    _startRestartTimeout();
   }
+
+  let _restartTimeoutTimer = null;
+  function _startRestartTimeout(){
+    clearTimeout(_restartTimeoutTimer);
+    _restartTimeoutTimer = setTimeout(()=>{
+      const tip = document.getElementById('multi-waiting-tip');
+      if(tip){
+        tip.innerHTML = `
+          <div style="font-size:13px;color:var(--red);margin-bottom:10px">⚠️ 搭档好像还没反应，可能网络断开了</div>
+          <button class="main-btn secondary" style="max-width:200px" onclick="App.exitMultiAndGoHome()">退出房间重新开始</button>
+        `;
+      }
+    }, 10000);
+  }
+  function _clearRestartTimeout(){ clearTimeout(_restartTimeoutTimer); }
 
   function _showMultiWaiting(msg, levelIdx){
     const wrap = _el('result-wrap');
@@ -1816,6 +1847,7 @@ const App=(()=>{
   }
 
   function startMultiFromRoom(idx){
+    _clearRestartTimeout();
     _multiMode = true;
     Store.setCurrentLevel(idx);
     Multi.setOnRoundResult((result)=>{ Game._onMultiRoundResult(result); });
